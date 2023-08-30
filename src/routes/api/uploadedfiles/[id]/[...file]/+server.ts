@@ -1,19 +1,21 @@
 import { json } from '@sveltejs/kit';
 
 export const GET = async ({ url, fetch }) => {
+	console.log('URL', url);
+	/*
 	const response = await fetch(
 		'https://ohif-dicom-json-example.s3.amazonaws.com/LIDC-IDRI-0001/01-01-2000-30178/3000566.000000-03192/1-002.dcm'
 	);
 
 	const data = await response.blob();
 
-	const responseData = new Response(data, {
+	*/
+
+	const responseData = new Response(JSON.stringify({ success: true }), {
 		headers: {
 			'Content-Type': 'application/dicom'
 		}
 	});
-
-	console.log('Response', response);
 
 	return responseData;
 };

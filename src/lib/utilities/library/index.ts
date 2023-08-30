@@ -4,9 +4,8 @@ import { invalidate } from '$app/navigation';
 import { downloadStore, type DownloadState } from '$lib/stores/downloadStore';
 import { uploadStore, type UploadState } from '$lib/stores/uploadStore';
 import { fetchClient } from '$lib/client';
+import standardDataElements from './standardElements';
 
-import { dumpDataSet } from '../ohif';
-import finalObject from './resource';
 import type { AxiosProgressEvent } from 'axios';
 
 export function download(blob: Blob, name: string) {
@@ -452,7 +451,6 @@ function seriesTags(metaData: any) {
 }
 
 export async function handleOhif(folder: any, token: string) {
-	/*
 	const files = await fetchFile(`${folder.path}/${folder.name}`, token, 'folder');
 
 	const filteredFiles = files.filter((file: any) => {
@@ -475,10 +473,16 @@ export async function handleOhif(folder: any, token: string) {
 						const testOutput: any[] = [];
 						const output: any[] = [];
 						const dataSet = dicomParser.parseDicom(byteArray);
+						const dictionary = createDataSet(dataSet);
+						console.log('Dictionary', dictionary);
+
+						/*
+						console.log('Dataset', dataSet);
 						dumpDataSet(dataSet, output, testOutput);
 						const merged = Object.assign({}, ...testOutput);
 						// callback(merged, file, fileName);
 						resolve(merged);
+						*/
 					}
 				} catch (error) {
 					console.log('Error', error);
@@ -506,6 +510,8 @@ export async function handleOhif(folder: any, token: string) {
 		};
 	}
 
+	/*
+
 	const dataForSeries = payload.instances[0];
 
 	const studyTagsDict = studyTags(dataForSeries.metadata, payload.instances.length);
@@ -524,7 +530,7 @@ export async function handleOhif(folder: any, token: string) {
 		]
 	};
 
-	*/
+	console.log('Final Object', finalObject);
 
 	const response = await fetch('/api/posts/', {
 		method: 'POST',
@@ -535,4 +541,58 @@ export async function handleOhif(folder: any, token: string) {
 	});
 
 	return response;
+	*/
+
+	return {};
+}
+
+function createDataSet(dataSet: any) {
+	console.log('DataSet', dataSet);
+
+	const dicomElements = [
+		'x00080050', // Accession Number
+		'x00280100', // Bits Allocated
+		'x00280101', // Bits Stored
+		'x00280011', // Columns
+		'x00200052', // Frame of Reference UID
+		'x00280102', // High Bit
+		'x00200037', // Image Orientation Patient
+		'x00200032', // Image Position Patient
+		'x00080008', // Image Type
+		'x00200013', // Instance Number
+		'x00080061', // Modalities
+		'x00080060', // Modality
+		'x00201209', // Number of Instances
+		'x00101010', // Patient Age
+		'x00100020', // Patient ID
+		'x00100010', // Patient Name
+		'x00100040', // Patient Sex
+		'x00280004', // Photometric Interpretation
+		'x00280103', // Pixel Representation
+		'x00280030', // Pixel Spacing
+		'x00280010', // Rows
+		'x00080016', // SOP Class UID
+		'x00080018', // SOP Instance UID
+		'x00280002', // Samples Per Pixel
+		'x00080022', // Time
+		'x0020000d', // Study Instance UID
+		'x00200011', // Series Number
+		'x00180088', // Spacing Between Slices
+		'x00080031', // Series Time
+		'x00180081', // View Position
+		'x00080020', // Study Date
+		'x00080030', // Study Time
+		'x00281073', // Window Center
+		'x00281074', // Window Width
+		'x00080021' // Series Date
+	];
+
+	// Extract values from the parsed DICOM dataset
+	const dicomValues: any = {};
+	dicomElements.forEach((elementTag) => {
+		const value = dataSet.string(elementTag);
+		dicomValues[elementTag] = value;
+	});
+
+	console.log(dicomValues);
 }

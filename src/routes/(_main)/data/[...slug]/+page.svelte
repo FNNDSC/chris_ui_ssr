@@ -142,7 +142,7 @@
 
 				if (response) {
 					window.open(
-						`http://192.168.0.197:3002/viewer/dicomjson?url=http://192.168.0.197:5173/api/posts/${folder.name}.json`
+						// `http://192.168.0.197:3002/viewer/dicomjson?url=http://192.168.0.197:5173/api/posts/${folder.name}.json`
 					);
 				}
 
