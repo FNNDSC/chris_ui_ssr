@@ -44,7 +44,7 @@ const finalObject = {
 								WindowWidth: 1600,
 								SeriesDate: '20000101'
 							},
-							url: 'dicomweb:http://192.168.0.197:5173/api/uploadedfiles/test'
+							url: 'dicomweb:http://http://192.168.0.197:5173/api/uploadedfiles/test'
 						}
 					]
 				}

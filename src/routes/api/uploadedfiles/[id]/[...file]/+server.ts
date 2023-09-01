@@ -1,28 +1,34 @@
-import { json } from '@sveltejs/kit';
+export const GET = async ({ url }) => {
+	const pathNameSplit = url.pathname.split('/api/uploadedfiles/')[1].split('/');
+	const folder = pathNameSplit[0];
+	const file = pathNameSplit.slice(1).join('/');
 
-export const GET = async ({ url, fetch }) => {
-	console.log('URL', url);
-	/*
-	const response = await fetch(
-		'https://ohif-dicom-json-example.s3.amazonaws.com/LIDC-IDRI-0001/01-01-2000-30178/3000566.000000-03192/1-002.dcm'
+	const data = await fetch(
+		`https://ohif-dicom-json-example.s3.amazonaws.com/LIDC-IDRI-0001/01-01-2000-30178/3000566.000000-03192/1-001.dcm`
 	);
+	const blob = await data.blob();
 
-	const data = await response.blob();
+	console.log('Blob', blob);
 
-	*/
-
-	const responseData = new Response(JSON.stringify({ success: true }), {
+	const responseData = new Response(blob, {
 		headers: {
-			'Content-Type': 'application/dicom'
+			'Content-Type': 'application/dicom',
+			credentials: 'include',
+			'Access-Control-Allow-Credentials': 'true',
+			'Access-Control-Allow-Origin': '*',
+			'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
+			'Access-Control-Allow-Headers':
+				'authorization, x-client-info, apikey, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
 		}
 	});
 
 	return responseData;
 };
 
-export const OPTIONS = async ({ url }) => {
+export const OPTIONS = async () => {
 	return new Response('ok', {
 		headers: {
+			credentials: 'include',
 			'Access-Control-Allow-Credentials': 'true',
 			'Access-Control-Allow-Origin': '*',
 			'Access-Control-Allow-Methods': 'OPTIONS,POST',

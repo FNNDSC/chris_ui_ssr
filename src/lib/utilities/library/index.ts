@@ -469,20 +469,9 @@ export async function handleOhif(folder: any, token: string) {
 					if (reader.result) {
 						//@ts-ignore
 						const byteArray = new Uint8Array(reader.result);
-
-						const testOutput: any[] = [];
-						const output: any[] = [];
 						const dataSet = dicomParser.parseDicom(byteArray);
 						const dictionary = createDataSet(dataSet);
-						console.log('Dictionary', dictionary);
-
-						/*
-						console.log('Dataset', dataSet);
-						dumpDataSet(dataSet, output, testOutput);
-						const merged = Object.assign({}, ...testOutput);
-						// callback(merged, file, fileName);
-						resolve(merged);
-						*/
+						resolve(dictionary);
 					}
 				} catch (error) {
 					console.log('Error', error);
@@ -495,8 +484,23 @@ export async function handleOhif(folder: any, token: string) {
 	for (let i = 0; i < filteredFiles.length; i++) {
 		const file = filteredFiles[i];
 		const blob = await file.getFileBlob();
+
+		await fetch('/api/files/', {
+			method: 'POST',
+			body: JSON.stringify({
+				folder: folder.name,
+				filename: file.data.fname,
+				file: {
+					data: file.data,
+					token: token
+				}
+			}),
+			headers: {
+				'content-type': 'application/json'
+			}
+		});
 		const merged = await setupReader(blob);
-		const url = `dicomweb:http://localhost:5173/api/uploadedfiles/${file.data.id}.dcm`;
+		const url = `dicomweb:http://192.168.0.197:5173/api/uploadedfiles/${folder.name}/${file.data.fname}`;
 
 		payload = {
 			...payload,
@@ -509,8 +513,6 @@ export async function handleOhif(folder: any, token: string) {
 			]
 		};
 	}
-
-	/*
 
 	const dataForSeries = payload.instances[0];
 
@@ -530,8 +532,6 @@ export async function handleOhif(folder: any, token: string) {
 		]
 	};
 
-	console.log('Final Object', finalObject);
-
 	const response = await fetch('/api/posts/', {
 		method: 'POST',
 		body: JSON.stringify({ name: folder.name, finalObject }),
@@ -541,58 +541,68 @@ export async function handleOhif(folder: any, token: string) {
 	});
 
 	return response;
-	*/
-
-	return {};
 }
 
 function createDataSet(dataSet: any) {
-	console.log('DataSet', dataSet);
+	// Define a mapping of DICOM element tags to headers and their types
+	const dicomTagToHeader: any = {
+		x00080050: 'AccessionNumber',
+		x00280100: { header: 'BitsAllocated', type: 'uint16' },
+		x00280101: { header: 'BitsStored', type: 'uint16' },
+		x00280011: { header: 'Columns', type: 'uint16' },
+		x00200052: 'FrameOfReferenceUID',
+		x00280102: { header: 'HighBit', type: 'unint16' },
+		x00200037: 'ImageOrientationPatient',
+		x00200032: 'ImagePositionPatient',
+		x00080008: 'ImageType',
+		x00200013: 'InstanceNumber',
+		x00080061: 'Modalities',
+		x00080060: 'Modality',
+		x00201209: 'NumberOfInstances',
+		x00101010: 'PatientAge',
+		x00100020: 'PatientID',
+		x00100010: 'PatientName',
+		x00100040: 'PatientSex',
+		x00280004: 'PhotometricInterpretation',
+		x00280103: 'PixelRepresentation',
+		x00280030: 'PixelSpacing',
+		x00280010: { header: 'Rows', type: 'uint16' },
+		x00080016: 'SOPClassUID',
+		x00080018: 'SOPInstanceUID',
+		x00280002: { header: 'SamplesPerPixel', type: 'uint16' },
+		x00080022: 'Time',
+		x0020000d: 'StudyInstanceUID',
+		x0020000e: 'SeriesInstanceUID',
+		x00200011: 'SeriesNumber',
+		x00180050: 'SliceThickness',
+		x00180088: 'SpacingBetweenSlices',
+		x00080031: 'SeriesTime',
+		x00180081: 'ViewPosition',
+		x00080020: 'StudyDate',
+		x00080030: 'StudyTime',
+		x00281073: 'WindowCenter',
+		x00281074: 'WindowWidth',
+		x00080021: 'SeriesDate'
+	};
 
-	const dicomElements = [
-		'x00080050', // Accession Number
-		'x00280100', // Bits Allocated
-		'x00280101', // Bits Stored
-		'x00280011', // Columns
-		'x00200052', // Frame of Reference UID
-		'x00280102', // High Bit
-		'x00200037', // Image Orientation Patient
-		'x00200032', // Image Position Patient
-		'x00080008', // Image Type
-		'x00200013', // Instance Number
-		'x00080061', // Modalities
-		'x00080060', // Modality
-		'x00201209', // Number of Instances
-		'x00101010', // Patient Age
-		'x00100020', // Patient ID
-		'x00100010', // Patient Name
-		'x00100040', // Patient Sex
-		'x00280004', // Photometric Interpretation
-		'x00280103', // Pixel Representation
-		'x00280030', // Pixel Spacing
-		'x00280010', // Rows
-		'x00080016', // SOP Class UID
-		'x00080018', // SOP Instance UID
-		'x00280002', // Samples Per Pixel
-		'x00080022', // Time
-		'x0020000d', // Study Instance UID
-		'x00200011', // Series Number
-		'x00180088', // Spacing Between Slices
-		'x00080031', // Series Time
-		'x00180081', // View Position
-		'x00080020', // Study Date
-		'x00080030', // Study Time
-		'x00281073', // Window Center
-		'x00281074', // Window Width
-		'x00080021' // Series Date
-	];
+	// Define the list of DICOM element tags you want to extract
+	const dicomElements = Object.keys(dicomTagToHeader);
 
-	// Extract values from the parsed DICOM dataset
+	// Extract values from the parsed DICOM dataset and store in a dictionary
 	const dicomValues: any = {};
 	dicomElements.forEach((elementTag) => {
-		const value = dataSet.string(elementTag);
-		dicomValues[elementTag] = value;
+		const tagInfo = dicomTagToHeader[elementTag];
+		let value: any;
+
+		if (tagInfo && tagInfo.type === 'uint16') {
+			value = dataSet.uint16(elementTag); // Convert to numerical value
+		} else {
+			value = dataSet.string(elementTag); // Default: string value
+		}
+
+		const header = tagInfo.header ? tagInfo.header : tagInfo;
+		dicomValues[header] = value;
 	});
 
-	console.log(dicomValues);
+	return dicomValues;
 }

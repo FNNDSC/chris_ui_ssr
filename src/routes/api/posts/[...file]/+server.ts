@@ -1,8 +1,7 @@
 import { json } from '@sveltejs/kit';
 import db from '$db/mongo';
 
-export const GET = async ({ url }) => {
-	console.log('URL', url);
+export const GET = async ({ url, cookies }) => {
 	const pathnameList = url.pathname.split('/');
 
 	const currentPath = pathnameList[pathnameList.length - 1];
@@ -19,7 +18,15 @@ export const GET = async ({ url }) => {
 	}
 
 	return new Response(JSON.stringify(json), {
-		status: 200
+		status: 200,
+		headers: {
+			credentials: 'include',
+			'Access-Control-Allow-Credentials': 'true',
+			'Access-Control-Allow-Origin': '*',
+			'Access-Control-Allow-Methods': 'OPTIONS,POST',
+			'Access-Control-Allow-Headers':
+				'authorization, x-client-info, apikey, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+		}
 	});
 };
 
