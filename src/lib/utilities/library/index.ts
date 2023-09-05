@@ -453,6 +453,8 @@ function seriesTags(metaData: any) {
 export async function handleOhif(folder: any, token: string) {
 	const files = await fetchFile(`${folder.path}/${folder.name}`, token, 'folder');
 
+	console.log('Files', files[0].data.fname);
+
 	const filteredFiles = files.filter((file: any) => {
 		if (getFileExtension(file.data.fname) === 'dcm') return file;
 	});
@@ -531,6 +533,8 @@ export async function handleOhif(folder: any, token: string) {
 			}
 		]
 	};
+
+	console.log('Final Object', finalObject);
 
 	const response = await fetch('/api/posts/', {
 		method: 'POST',

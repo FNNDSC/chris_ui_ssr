@@ -35,12 +35,17 @@ export const POST = async ({ request }) => {
 
 	const myCollection = db.collection('ohif');
 
-	myCollection.insertOne({
+	console.log('Data', data);
+
+	await myCollection.insertOne({
 		name: data.name,
 		data: data.finalObject
 	});
 
-	return json({
-		status: 200
-	});
+	return json(
+		{ success: true },
+		{
+			status: 200
+		}
+	);
 };

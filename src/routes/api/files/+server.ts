@@ -14,26 +14,24 @@ export const GET = async ({ url, fetch }) => {
 		json = doc.data;
 	}
 
+	console.log('JSON', json);
+
 	const fileName = getFileName(json.data.fname);
 
-	//const urlToFetch = `http://localhost:8000/api/v1/uploadedfiles/${json.data.id}/${fileName}`;
+	const urlToFetch = `http://localhost:8000/api/v1/uploadedfiles/${json.data.id}/${fileName}`;
 
-	/*
-     headers: {
-			Authorization: `Token ${json.data.token}`
+	const data = await fetch(urlToFetch, {
+		headers: {
+			Authorization: `Token ${json.token} `
 		}
+	});
 
-	*/
+	const blob = await data.blob();
 
-	const urlToFetch =
-		'https://ohif-dicom-json-example.s3.amazonaws.com/LIDC-IDRI-0001/01-01-2000-30178/3000566.000000-03192/1-001.dcm';
-
-	const data = await fetch(urlToFetch);
-
-	return new Response(JSON.stringify(data.blob), {
+	return new Response(blob, {
 		status: 200,
 		headers: {
-			'Content-Type': 'blob',
+			'Content-Type': 'application/dicom',
 			credentials: 'include',
 			'Access-Control-Allow-Credentials': 'true',
 			'Access-Control-Allow-Origin': '*',
@@ -48,7 +46,7 @@ export const POST = async ({ request }) => {
 	const data = await request.json();
 
 	const myCollection = db.collection(`${data.folder}`);
-	myCollection.insertOne({
+	await myCollection.insertOne({
 		name: data.filename,
 		data: data.file
 	});

@@ -136,7 +136,10 @@
 			}
 
 			case 'OHIF': {
+				
 				const response = await handleOhif(folder, data.token);
+
+				console.log("Response", response);
 
 				if (response) {
 					window.open(
