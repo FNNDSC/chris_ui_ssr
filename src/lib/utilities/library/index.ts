@@ -452,9 +452,6 @@ function seriesTags(metaData: any) {
 
 export async function handleOhif(folder: any, token: string) {
 	const files = await fetchFile(`${folder.path}/${folder.name}`, token, 'folder');
-
-	console.log('Files', files[0].data.fname);
-
 	const filteredFiles = files.filter((file: any) => {
 		if (getFileExtension(file.data.fname) === 'dcm') return file;
 	});
@@ -487,15 +484,12 @@ export async function handleOhif(folder: any, token: string) {
 		const file = filteredFiles[i];
 		const blob = await file.getFileBlob();
 
-		await fetch('/api/files/', {
+		await fetch('/api/files', {
 			method: 'POST',
 			body: JSON.stringify({
 				folder: folder.name,
-				filename: file.data.fname,
-				file: {
-					data: file.data,
-					token: token
-				}
+				file: file.data,
+				token: token
 			}),
 			headers: {
 				'content-type': 'application/json'
@@ -536,7 +530,7 @@ export async function handleOhif(folder: any, token: string) {
 
 	console.log('Final Object', finalObject);
 
-	const response = await fetch('/api/posts/', {
+	const response = await fetch('/api/posts', {
 		method: 'POST',
 		body: JSON.stringify({ name: folder.name, finalObject }),
 		headers: {
@@ -550,42 +544,43 @@ export async function handleOhif(folder: any, token: string) {
 function createDataSet(dataSet: any) {
 	// Define a mapping of DICOM element tags to headers and their types
 	const dicomTagToHeader: any = {
-		x00080050: 'AccessionNumber',
-		x00280100: { header: 'BitsAllocated', type: 'uint16' },
-		x00280101: { header: 'BitsStored', type: 'uint16' },
-		x00280011: { header: 'Columns', type: 'uint16' },
-		x00200052: 'FrameOfReferenceUID',
-		x00280102: { header: 'HighBit', type: 'unint16' },
-		x00200037: 'ImageOrientationPatient',
-		x00200032: 'ImagePositionPatient',
-		x00080008: 'ImageType',
-		x00200013: 'InstanceNumber',
-		x00080061: 'Modalities',
-		x00080060: 'Modality',
-		x00201209: 'NumberOfInstances',
-		x00101010: 'PatientAge',
-		x00100020: 'PatientID',
+		x00080020: 'StudyDate',
+		x00080030: 'StudyTime',
 		x00100010: 'PatientName',
+		x00100020: 'PatientID',
+		x00080050: 'AccessionNumber',
+		x00080061: 'Modalities',
+		x00101010: 'PatientAge',
 		x00100040: 'PatientSex',
-		x00280004: 'PhotometricInterpretation',
-		x00280103: 'PixelRepresentation',
-		x00280030: 'PixelSpacing',
-		x00280010: { header: 'Rows', type: 'uint16' },
-		x00080016: 'SOPClassUID',
-		x00080018: 'SOPInstanceUID',
-		x00280002: { header: 'SamplesPerPixel', type: 'uint16' },
+		x00201209: 'NumberOfInstances',
 		x00080022: 'Time',
-		x0020000d: 'StudyInstanceUID',
-		x0020000e: 'SeriesInstanceUID',
 		x00200011: 'SeriesNumber',
-		x00180050: 'SliceThickness',
+		x00180050: { header: 'SliceThickness', type: 'int' },
 		x00180088: 'SpacingBetweenSlices',
 		x00080031: 'SeriesTime',
 		x00180081: 'ViewPosition',
-		x00080020: 'StudyDate',
-		x00080030: 'StudyTime',
-		x00281073: 'WindowCenter',
-		x00281074: 'WindowWidth',
+
+		x00280011: { header: 'Columns', type: 'uint16' },
+		x00280010: { header: 'Rows', type: 'uint16' },
+		x00200013: { header: 'InstanceNumber', type: 'int' },
+		x00080016: 'SOPClassUID',
+		x00280004: 'PhotometricInterpretation',
+		x00280100: { header: 'BitsAllocated', type: 'uint16' },
+		x00280101: { header: 'BitsStored', type: 'uint16' },
+		x00280103: { header: 'PixelRepresentation', type: 'uint16' },
+		x00280002: { header: 'SamplesPerPixel', type: 'uint16' },
+		x00280030: { header: 'PixelSpacing', type: 'array', convert: true },
+		x00280102: { header: 'HighBit', type: 'uint16' },
+		x00200037: { header: 'ImageOrientationPatient', type: 'array', convert: true },
+		x00200032: { header: 'ImagePositionPatient', type: 'array', convert: true },
+		x00200052: 'FrameOfReferenceUID',
+		x00080008: { header: 'ImageType', type: 'array' },
+		x00080060: 'Modality',
+		x00080018: 'SOPInstanceUID',
+		x0020000e: 'SeriesInstanceUID',
+		x0020000d: 'StudyInstanceUID',
+		x00281050: { header: 'WindowCenter', type: 'int' },
+		x00281051: { header: 'WindowWidth', type: 'int' },
 		x00080021: 'SeriesDate'
 	};
 
@@ -600,6 +595,17 @@ function createDataSet(dataSet: any) {
 
 		if (tagInfo && tagInfo.type === 'uint16') {
 			value = dataSet.uint16(elementTag); // Convert to numerical value
+		} else if (tagInfo && tagInfo.type === 'int') {
+			value = parseInt(dataSet.string(elementTag));
+		} else if (tagInfo && tagInfo.type === 'array') {
+			const valueToSplit = dataSet.string(elementTag);
+			if (valueToSplit) {
+				value = valueToSplit.split('\\');
+			}
+
+			if (tagInfo.convert === true && value) {
+				value = value.map(Number);
+			}
 		} else {
 			value = dataSet.string(elementTag); // Default: string value
 		}

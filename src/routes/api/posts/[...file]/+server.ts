@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import db from '$db/mongo';
 
-export const GET = async ({ url, cookies }) => {
+export const GET = async ({ url }) => {
 	const pathnameList = url.pathname.split('/');
 
 	const currentPath = pathnameList[pathnameList.length - 1];
@@ -35,13 +35,20 @@ export const POST = async ({ request }) => {
 
 	const myCollection = db.collection('ohif');
 
-	console.log('Data', data);
+	const query = { name: data.name }; // Define your query criteria
 
-	await myCollection.insertOne({
+	// Create the new document you want to replace with
+	const newDocument = {
 		name: data.name,
 		data: data.finalObject
-	});
+	};
 
+	// Use findOneAndUpdate to check if a document with the same name exists and replace it if found
+	await myCollection.findOneAndUpdate(
+		query,
+		{ $set: newDocument }, // Use $set to update the existing document
+		{ upsert: true } // If no matching document found, insert a new one
+	);
 	return json(
 		{ success: true },
 		{

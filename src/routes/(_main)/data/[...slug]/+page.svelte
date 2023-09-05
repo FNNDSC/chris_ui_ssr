@@ -136,16 +136,11 @@
 			}
 
 			case 'OHIF': {
-				
-				const response = await handleOhif(folder, data.token);
+				await handleOhif(folder, data.token);
 
-				console.log("Response", response);
-
-				if (response) {
-					window.open(
-						`http://192.168.0.197:3002/viewer/dicomjson?url=http://192.168.0.197:5173/api/posts/${folder.name}.json`
-					);
-				}
+				window.open(
+					`http://192.168.0.197:3002/viewer/dicomjson?url=http://192.168.0.197:5173/api/posts/${folder.name}.json`
+				);
 			}
 		}
 	}
