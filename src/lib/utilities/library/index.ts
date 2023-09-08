@@ -482,21 +482,20 @@ export async function handleOhif(folder: any, token: string) {
 
 	for (let i = 0; i < filteredFiles.length; i++) {
 		const file = filteredFiles[i];
+		console.log('File', file);
 		const blob = await file.getFileBlob();
 
-		await fetch('/api/files', {
+		console.log('BLOB', blob);
+
+		await fetch(`/api/files/${file.data.fname}`, {
 			method: 'POST',
-			body: JSON.stringify({
-				folder: folder.name,
-				file: file.data,
-				token: token
-			}),
+			body: blob,
 			headers: {
-				'content-type': 'application/json'
+				'content-type': `${blob.type}`
 			}
 		});
 		const merged = await setupReader(blob);
-		const url = `dicomweb:http://192.168.0.197:5173/api/uploadedfiles/${folder.name}/${file.data.fname}`;
+		const url = `dicomweb:http://192.168.0.197:5173/api/files/ohif/${file.data.fname}`;
 
 		payload = {
 			...payload,
@@ -528,8 +527,6 @@ export async function handleOhif(folder: any, token: string) {
 		]
 	};
 
-	console.log('Final Object', finalObject);
-
 	const response = await fetch('/api/posts', {
 		method: 'POST',
 		body: JSON.stringify({ name: folder.name, finalObject }),
@@ -541,7 +538,7 @@ export async function handleOhif(folder: any, token: string) {
 	return response;
 }
 
-function createDataSet(dataSet: any) {
+function createDataSet(dataSet: dicomParser.DataSet) {
 	// Define a mapping of DICOM element tags to headers and their types
 	const dicomTagToHeader: any = {
 		x00080020: 'StudyDate',

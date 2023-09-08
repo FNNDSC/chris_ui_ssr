@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
-import db from '$db/mongo';
+import fs from 'fs';
+import path from 'path';
 
 export const GET = async ({ url }) => {
 	const pathnameList = url.pathname.split('/');
@@ -7,19 +8,14 @@ export const GET = async ({ url }) => {
 	const currentPath = pathnameList[pathnameList.length - 1];
 	const queryPath = currentPath.split('.json')[0];
 
-	const query = { name: queryPath };
+	const readPath = 'ohif/' + queryPath + `/${queryPath}.json`;
 
-	const cursor = db.collection('ohif').find(query);
+	const data = await fs.promises.readFile(readPath);
 
-	let json: any = {};
-
-	for await (const doc of cursor) {
-		json = doc.data;
-	}
-
-	return new Response(JSON.stringify(json), {
+	return new Response(data, {
 		status: 200,
 		headers: {
+			'Content-type': 'application/json',
 			credentials: 'include',
 			'Access-Control-Allow-Credentials': 'true',
 			'Access-Control-Allow-Origin': '*',
@@ -33,22 +29,21 @@ export const GET = async ({ url }) => {
 export const POST = async ({ request }) => {
 	const data = await request.json();
 
-	const myCollection = db.collection('ohif');
+	const outputDirectory = 'ohif/' + data.name;
 
-	const query = { name: data.name }; // Define your query criteria
+	if (!fs.existsSync(outputDirectory)) {
+		fs.mkdirSync(outputDirectory, { recursive: true }); // Create directory recursively
+	}
+	const pathToSave = path.join(outputDirectory, `${data.name}.json`);
 
-	// Create the new document you want to replace with
-	const newDocument = {
-		name: data.name,
-		data: data.finalObject
-	};
+	fs.writeFile(pathToSave, JSON.stringify(data.finalObject), 'utf-8', (err) => {
+		if (err) {
+			console.warn('Error in writing the JSON file:', err);
+		} else {
+			console.warn('JSON file has been saved successfully');
+		}
+	});
 
-	// Use findOneAndUpdate to check if a document with the same name exists and replace it if found
-	await myCollection.findOneAndUpdate(
-		query,
-		{ $set: newDocument }, // Use $set to update the existing document
-		{ upsert: true } // If no matching document found, insert a new one
-	);
 	return json(
 		{ success: true },
 		{

@@ -1,8 +1,8 @@
 export const GET = async ({ url, fetch }) => {
 	const pathNameSplit = url.pathname.split('/api/uploadedfiles/')[1].split('/');
-	const folder = pathNameSplit[0];
+
 	const file = pathNameSplit.slice(1).join('/');
-	const data = await fetch(`/api/files?folder=${folder}&file=${file}`);
+	const data = await fetch(`/api/files/${file}`);
 	const blob = await data.blob();
 
 	const responseData = new Response(blob, {

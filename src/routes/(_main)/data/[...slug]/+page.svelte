@@ -136,11 +136,14 @@
 			}
 
 			case 'OHIF': {
-				await handleOhif(folder, data.token);
+				const newWindow = window.open('http://localhost:5173/ohif', '_blank');
 
-				window.open(
-					`http://192.168.0.197:3002/viewer/dicomjson?url=http://192.168.0.197:5173/api/posts/${folder.name}.json`
-				);
+				const response = await handleOhif(folder, data.token);
+
+				if (response.status === 200) {
+					if (newWindow)
+						newWindow.location = `http://192.168.0.197:3002/viewer/dicomjson?url=http://192.168.0.197:5173/api/posts/${folder.name}.json`;
+				}
 			}
 		}
 	}
