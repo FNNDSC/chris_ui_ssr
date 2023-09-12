@@ -1,8 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
 import { fetchClient } from '$lib/client';
-import { start_mongo } from '$db/mongo';
-
-start_mongo();
 
 export const handle: Handle = async ({ resolve, event }) => {
 	// get cookies from browser

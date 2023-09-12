@@ -141,7 +141,7 @@
 
 				if (response.status === 200) {
 					if (newWindow)
-						newWindow.location = `http://192.168.0.197:3002/viewer/dicomjson?url=http://192.168.0.197:5173/api/posts/${folder.name}.json`;
+						newWindow.location = `http://192.168.0.197:3002/viewer/dicomjson?url=http://localhost:5173/api/posts/${folder.name}.json`;
 				}
 			}
 		}

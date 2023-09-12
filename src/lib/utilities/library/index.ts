@@ -1,10 +1,8 @@
 import axios from 'axios';
-import * as dicomParser from 'dicom-parser';
 import { invalidate } from '$app/navigation';
 import { downloadStore, type DownloadState } from '$lib/stores/downloadStore';
 import { uploadStore, type UploadState } from '$lib/stores/uploadStore';
 import { fetchClient } from '$lib/client';
-import standardDataElements from './standardElements';
 
 import type { AxiosProgressEvent } from 'axios';
 

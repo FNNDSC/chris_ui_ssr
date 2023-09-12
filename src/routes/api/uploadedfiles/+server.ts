@@ -12,8 +12,8 @@ async function setupReader(blob: Blob) {
 
 export const POST = async ({ request, fetch }) => {
 	const data = await request.json();
-
-	const client = fetchClient(data.token);
+	const { path, token } = data;
+	const client = fetchClient(token);
 
 	const files = await client.getUploadedFiles({
 		fname: data.path
@@ -41,6 +41,7 @@ export const POST = async ({ request, fetch }) => {
 		});
 
 		const blob = await response.blob();
+
 		await fetch(`/api/files/${file.fname}`, {
 			method: 'POST',
 			body: blob,
@@ -50,7 +51,8 @@ export const POST = async ({ request, fetch }) => {
 		});
 
 		const merged = await setupReader(blob);
-		const url = `dicomweb:http://192.168.0.197:5173/api/files/ohif/${file.fname}`;
+
+		const url = `dicomweb:http://localhost:5173/api/files/ohif/${file.fname}`;
 		payload = {
 			...payload,
 			instances: [
@@ -81,9 +83,11 @@ export const POST = async ({ request, fetch }) => {
 		]
 	};
 
+	const pathForJSON = path.split('/uploads/')[1];
+
 	await fetch('/api/posts', {
 		method: 'POST',
-		body: JSON.stringify({ name: 'Test', finalObject }),
+		body: JSON.stringify({ name: pathForJSON, finalObject }),
 		headers: {
 			'content-type': 'application/json'
 		}

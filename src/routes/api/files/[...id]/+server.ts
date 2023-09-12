@@ -1,5 +1,4 @@
 import { json } from '@sveltejs/kit';
-import db from '$db/mongo';
 import { getFileName } from '$lib/utilities/library/index.js';
 import fs from 'fs';
 import path from 'path';

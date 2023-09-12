@@ -12,6 +12,8 @@ export const GET = async ({ url }) => {
 
 	const data = await fs.promises.readFile(readPath);
 
+	
+
 	return new Response(data, {
 		status: 200,
 		headers: {
