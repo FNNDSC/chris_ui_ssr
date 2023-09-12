@@ -21,7 +21,6 @@
 	import { uploadStore } from '$lib/stores/uploadStore';
 	import type { PageData } from './$types';
 	import type { PreviewPayload } from '$lib/types/Library';
-	import { goto } from '$app/navigation';
 
 	export let data: PageData;
 
