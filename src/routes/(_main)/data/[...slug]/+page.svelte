@@ -15,7 +15,8 @@
 		handleOhif,
 		createNewFolder,
 		getFileName,
-		getCurrentlyActive
+		getCurrentlyActive,
+		getFolderForJSON
 	} from '$lib/utilities/library';
 	import { downloadStore } from '$lib/stores/downloadStore';
 	import { uploadStore } from '$lib/stores/uploadStore';
@@ -89,7 +90,9 @@
 	async function dispatchFileActions(action: string, file: any, currentIndex?: number) {
 		switch (action) {
 			case 'Download': {
-				handleFileDownload(file, data.token);
+				const value = window.prompt('Please enter a path on your local file system for download');
+
+				handleFileDownload(file, data.token, value);
 				break;
 			}
 
@@ -108,6 +111,15 @@
 
 			case 'OHIF': {
 				console.log('OHIF', file);
+				const folderForJSON = getFolderForJSON(file.fname);
+				const newWindow = window.open('http://localhost:5173/ohif', '_blank');
+
+				const response = await handleOhif(file.fname, folderForJSON, data.token);
+
+				if (response.status === 200) {
+					if (newWindow)
+						newWindow.location = `http://192.168.0.197:3002/viewer/dicomjson?url=http://localhost:5173/api/posts/${folderForJSON}.json`;
+				}
 			}
 
 			default:
@@ -118,7 +130,8 @@
 	async function dispatchFolderActions(action: string, folder: any, currentIndex?: number) {
 		switch (action) {
 			case 'Download': {
-				handleFolderDownload(folder, data.token);
+				const value = window.prompt('Please enter a path on your local file system for download');
+				handleFolderDownload(folder, data.token, value);
 				break;
 			}
 			case 'Delete': {
@@ -137,7 +150,7 @@
 			case 'OHIF': {
 				const newWindow = window.open('http://localhost:5173/ohif', '_blank');
 
-				const response = await handleOhif(folder, data.token);
+				const response = await handleOhif(`${folder.path}/${folder.name}`, folder.name, data.token);
 
 				if (response.status === 200) {
 					if (newWindow)

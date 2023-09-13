@@ -12,11 +12,12 @@ async function setupReader(blob: Blob) {
 
 export const POST = async ({ request, fetch }) => {
 	const data = await request.json();
-	const { path, token } = data;
+	
+	const { path, token, folderForJSON } = data;
 	const client = fetchClient(token);
 
 	const files = await client.getUploadedFiles({
-		fname: data.path
+		fname: path
 	});
 
 	const filteredFiles = files.data.map((file) => {
@@ -83,11 +84,9 @@ export const POST = async ({ request, fetch }) => {
 		]
 	};
 
-	const pathForJSON = path.split('/uploads/')[1];
-
 	await fetch('/api/posts', {
 		method: 'POST',
-		body: JSON.stringify({ name: pathForJSON, finalObject }),
+		body: JSON.stringify({ name: folderForJSON, finalObject }),
 		headers: {
 			'content-type': 'application/json'
 		}

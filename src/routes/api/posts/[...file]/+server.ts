@@ -4,15 +4,10 @@ import path from 'path';
 
 export const GET = async ({ url }) => {
 	const pathnameList = url.pathname.split('/');
-
 	const currentPath = pathnameList[pathnameList.length - 1];
 	const queryPath = currentPath.split('.json')[0];
-
 	const readPath = 'ohif/' + queryPath + `/${queryPath}.json`;
-
 	const data = await fs.promises.readFile(readPath);
-
-	
 
 	return new Response(data, {
 		status: 200,
@@ -32,7 +27,6 @@ export const POST = async ({ request }) => {
 	const data = await request.json();
 
 	const outputDirectory = 'ohif/' + data.name;
-
 	if (!fs.existsSync(outputDirectory)) {
 		fs.mkdirSync(outputDirectory, { recursive: true }); // Create directory recursively
 	}

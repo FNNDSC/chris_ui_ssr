@@ -9,7 +9,6 @@
   }
 
   export let value = 0;
-
   $: setProgress(value);
 </script>
 

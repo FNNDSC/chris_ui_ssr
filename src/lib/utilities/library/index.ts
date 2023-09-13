@@ -30,6 +30,12 @@ export function getFileName(fname: string) {
 	return fileName;
 }
 
+export function getFolderForJSON(fname: string) {
+	const fileNameArray = fname.split('/');
+	const fileName = fileNameArray[fileNameArray.length - 2];
+	return fileName;
+}
+
 export async function fetchFile(fname: string, token: string, type: string) {
 	const client = await clientSetup(token);
 	const fetchedFileList = await client.getUploadedFiles({
@@ -38,11 +44,36 @@ export async function fetchFile(fname: string, token: string, type: string) {
 	});
 
 	const fetchedFile = fetchedFileList.getItems() as any;
-
 	return type === 'file' ? fetchedFile[0] : fetchedFile;
 }
 
-export async function handleFileDownload(file: any, token: string) {
+export async function handleFileDelete(file: any, token: string) {
+	const fileData = await fetchFile(file.fname, token, 'file');
+	fileData.delete();
+	invalidate('app:reload');
+}
+
+export async function handleFolderDelete(folder: any, token: string) {
+	const name = `${folder.path}/${folder.name}`;
+	const files = await fetchFile(name, token, 'folder');
+	for (const file of files) {
+		file.delete();
+	}
+	invalidate('app:reload');
+}
+
+export async function handleFileDownload(file: any, token: string, path: string | null) {
+	console.log('Handle File Download');
+
+	const response = await fetch('/api/downloads', {
+		method: 'POST',
+		body: JSON.stringify({
+			fname: file.fname,
+			token,
+			userDirectory: path
+		})
+	});
+	/*
 	const fileData = await fetchFile(file.fname, token, 'file');
 	const fileSize = fileData.data.fsize;
 	const fileName = getFileName(fileData.data.fname);
@@ -82,23 +113,22 @@ export async function handleFileDownload(file: any, token: string) {
 		const blob = await fileData.getFileBlob();
 		download(blob, fileName);
 	}
+	*/
 }
 
-export async function handleFileDelete(file: any, token: string) {
-	const fileData = await fetchFile(file.fname, token, 'file');
-	fileData.delete();
-	invalidate('app:reload');
-}
-export async function handleFolderDelete(folder: any, token: string) {
-	const name = `${folder.path}/${folder.name}`;
-	const files = await fetchFile(name, token, 'folder');
-	for (const file of files) {
-		file.delete();
-	}
-	invalidate('app:reload');
-}
+export async function handleFolderDownload(folder: any, token: string, path: string | null) {
+	console.log('Folder Download');
 
-export async function handleFolderDownload(folder: any, token: string) {
+	const response = await fetch('/api/downloads', {
+		method: 'POST',
+		body: JSON.stringify({
+			fname: `${folder.path}/${folder.name}`,
+			token,
+			userDirectory: path
+		})
+	});
+
+	/*
 	downloadStore.setNewNotification();
 	downloadStore.setFolderStep(folder.name, 'Preparing to zip');
 
@@ -235,6 +265,7 @@ export async function handleFolderDownload(folder: any, token: string) {
 			return;
 		}
 	}
+	*/
 }
 
 export async function handleUpload(
@@ -299,7 +330,6 @@ export async function handleUpload(
 			};
 			await axios.post(url, formData, config);
 		} catch (error: any) {
-			console.log('Error', error.response || error.message);
 			uploadStore.setStatusForFiles('Upload Failed', file.name, 0, controller);
 		}
 	});
@@ -421,12 +451,13 @@ export function getFileExtension(filename: string) {
 	return name;
 }
 
-export async function handleOhif(folder: any, token: string) {
+export async function handleOhif(path: string, folderForJSON: string, token: string) {
 	const response = await fetch('/api/uploadedfiles', {
 		method: 'POST',
 		body: JSON.stringify({
-			path: `${folder.path}/${folder.name}`,
-			token
+			path,
+			token,
+			folderForJSON
 		})
 	});
 

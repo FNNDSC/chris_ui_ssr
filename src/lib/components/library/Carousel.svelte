@@ -5,7 +5,7 @@
     DcmDisplay,
     ImageDisplay,
     IFrameDisplay,
-  } from "$lib/components/Displays";
+  } from "$components/displays";
   import { Button } from "$lib/components/ui/button";
   import {
     fetchFile,
