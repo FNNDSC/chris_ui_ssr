@@ -1,6 +1,9 @@
 import { fetchClient } from '$lib/client.js';
 import * as dicomParser from 'dicom-parser';
 import { getFileExtension, getFileName } from '$lib/utilities/library/index.js';
+import { PUBLIC_API_URL, PUBLIC_RESOURCES_URL } from '$env/static/public';
+import { string } from 'zod';
+import type { UploadedFileList } from '@fnndsc/chrisapi';
 
 async function setupReader(blob: Blob) {
 	const buffer = Buffer.from(await blob.arrayBuffer());
@@ -10,79 +13,218 @@ async function setupReader(blob: Blob) {
 	return dictionary;
 }
 
-export const POST = async ({ request, fetch }) => {
-	const data = await request.json();
-	
-	const { path, token, folderForJSON } = data;
+async function recursivelyOrganizeFiles(path: string, token: string, recursivePath: any) {
 	const client = fetchClient(token);
 
-	const files = await client.getUploadedFiles({
-		fname: path
+	const uploads = await client.getFileBrowserPaths({
+		path
 	});
 
-	const filteredFiles = files.data.map((file) => {
-		if (getFileExtension(file.fname) === 'dcm') return file;
-	});
+	if (uploads.data && uploads.data[0].subfolders) {
+		const subfolders = JSON.parse(uploads.data[0].subfolders);
+		if (subfolders.length > 0) {
+			if (subfolders && subfolders.length > 0) {
+				for (let i = 0; i < subfolders.length; i++) {
+					const folder = subfolders[i];
+					const computedPath = `${path}/${folder}`;
+					const pathList = await client.getFileBrowserPath(computedPath);
+					const files = await pathList.getFiles({ limit: 100000 });
+
+					if (files && files.data) {
+						recursivePath[computedPath] = files.data;
+					}
+					await recursivelyOrganizeFiles(computedPath, token, recursivePath);
+				}
+			}
+		} else return;
+	} else return;
+}
+
+export const POST = async ({ request, fetch }) => {
+	const data = await request.json();
+
+	const { path, token, folderForJSON } = data;
+
+	const recursivePath: { [key: string]: [] } = {};
+	await recursivelyOrganizeFiles(path, token, recursivePath);
 
 	let payload: any = {
 		instances: []
 	};
 
-	for (let i = 0; i < filteredFiles.length; i++) {
-		const file = filteredFiles[i];
-		const fileName = getFileName(file.fname);
+	let finalObject: any = {};
 
-		const urlToFetch = `http://localhost:8000/api/v1/uploadedfiles/${file.id}/${fileName}`;
+	let seriesAcc: any = [];
 
-		const response = await fetch(urlToFetch, {
-			headers: {
-				'Content-Type': 'blob',
-				token: `Token ${data.token}`
-			}
-		});
+	for (const path in recursivePath) {
+		const files = recursivePath[path];
 
-		const blob = await response.blob();
+		for (let i = 0; i < files.length; i++) {
+			const file: any = files[i];
 
-		await fetch(`/api/files/${file.fname}`, {
-			method: 'POST',
-			body: blob,
-			headers: {
-				'content-type': `${blob.type}`
-			}
-		});
+			const client = fetchClient(token);
+			const fileList = await client.getUploadedFiles({
+				fname: file.fname
+			});
+			const { id, fname } = fileList.data[0];
+			const fileName = getFileName(fname);
+			const urlToFetch = `${PUBLIC_API_URL}uploadedfiles/${id}/${fileName}`;
 
-		const merged = await setupReader(blob);
+			const responseBlob = await fetch(urlToFetch, {
+				method: 'GET',
+				headers: {
+					Authorization: `Token ${token}`,
+					'Content-Type': 'blob'
+				}
+			});
 
-		const url = `dicomweb:http://localhost:5173/api/files/ohif/${file.fname}`;
-		payload = {
-			...payload,
-			instances: [
-				...payload.instances,
+			const blob = await responseBlob.blob();
+			await fetch(`/api/files/${fname}`, {
+				method: 'POST',
+				body: blob,
+				headers: {
+					'content-type': `${blob.type}`
+				}
+			});
+			
+			const merged = await setupReader(blob);
+			const url = `dicomweb:${PUBLIC_RESOURCES_URL}api/files/ohif/${fname}`;
+			payload = {
+				...payload,
+				instances: [
+					...payload.instances,
+					{
+						url: url,
+						metadata: merged
+					}
+				]
+			};
+		}
+
+		const dataForSeries = payload.instances[0];
+
+		const studyTagsDict = studyTags(dataForSeries.metadata, payload.instances.length);
+		const seriesTagsDict = seriesTags(dataForSeries.metadata);
+
+		/*
+		finalObject = {
+			studies: [
 				{
-					url: url,
-					metadata: merged
+					...studyTagsDict,
+					series: [
+					
+						{
+							...seriesTagsDict,
+							...payload
+						}
+					]
 				}
 			]
 		};
-	}
+		*/
 
-	const dataForSeries = payload.instances[0];
+		finalObject = {
+			studies: [
+				{
+					...studyTagsDict
+				}
+			]
+		};
 
-	const studyTagsDict = studyTags(dataForSeries.metadata, payload.instances.length);
-	const seriesTagsDict = seriesTags(dataForSeries.metadata);
-	const finalObject = {
-		studies: [
-			{
-				...studyTagsDict,
-				series: [
+		seriesAcc.push({
+			...seriesTagsDict,
+			...payload
+		});
+
+		/*		
+		for (let i = 0; i < filteredFiles.length; i++) {
+			const file = filteredFiles[i];
+			const fileName = getFileName(file.fname);
+	
+			const urlToFetch = `${PUBLIC_API_URL}uploadedfiles/${file.id}/${fileName}`;
+	
+			const response = await fetch(urlToFetch, {
+				headers: {
+					'Content-Type': 'blob',
+					Authorization: `Token ${token}`
+				}
+			});
+	
+			const blob = await response.blob();
+	
+			await fetch(`/api/files/${file.fname}`, {
+				method: 'POST',
+				body: blob,
+				headers: {
+					'content-type': `${blob.type}`
+				}
+			});
+	
+			const merged = await setupReader(blob);
+	
+			console.log('Merged', merged);
+	
+			const url = `dicomweb:${PUBLIC_RESOURCES_URL}api/files/ohif/${file.fname}`;
+	
+			payload = {
+				...payload,
+				instances: [
+					...payload.instances,
 					{
-						...seriesTagsDict,
-						...payload
+						url: url,
+						metadata: merged
 					}
 				]
+			};
+		}
+	
+		console.log('Payload', payload);
+	
+		/*
+	
+		const dataForSeries = payload.instances[0];
+	
+		const studyTagsDict = studyTags(dataForSeries.metadata, payload.instances.length);
+		const seriesTagsDict = seriesTags(dataForSeries.metadata);
+		const finalObject = {
+			studies: [
+				{
+					...studyTagsDict,
+					series: [
+						{
+							...seriesTagsDict,
+							...payload
+						}
+					]
+				}
+			]
+		};
+	
+		const finalObject = {};
+	
+		await fetch('/api/posts', {
+			method: 'POST',
+			body: JSON.stringify({ name: folderForJSON, finalObject }),
+			headers: {
+				'content-type': 'application/json'
 			}
-		]
-	};
+		});
+		*/
+	}
+
+	/*
+
+	await fetch('/api/posts', {
+		method: 'POST',
+		body: JSON.stringify({ name: folderForJSON, finalObject }),
+		headers: {
+			'content-type': 'application/json'
+		}
+	});
+
+	*/
+
+	finalObject.studies[0].series = seriesAcc;
 
 	await fetch('/api/posts', {
 		method: 'POST',

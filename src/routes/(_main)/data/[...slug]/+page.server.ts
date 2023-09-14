@@ -35,7 +35,7 @@ export const load = async ({ locals, cookies, params, depends }) => {
 	const pathList = await client.getFileBrowserPath(params.slug);
 
 	const fileList = await pathList.getFiles({
-		limit: 1000,
+		limit: 1000000,
 		offset: 0
 	});
 
