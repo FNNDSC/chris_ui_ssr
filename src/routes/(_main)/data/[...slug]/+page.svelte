@@ -23,6 +23,7 @@
 	import type { PageData } from './$types';
 	import type { PreviewPayload } from '$lib/types/Library';
 	import { PUBLIC_DUMMY_URL, PUBLIC_OHIF_URL, PUBLIC_RESOURCES_URL } from '$env/static/public';
+	import type { FolderType, FileType } from '$lib/types/Data';
 
 	export let data: PageData;
 
@@ -80,15 +81,18 @@
 			}
 
 			if (selected.type === 'file') {
-				const file = {
-					fname: selected.path.substring(9)
+				const file: FileType = {
+					creation_date: '',
+					fname: selected.path.substring(9),
+					fsize: 0
 				};
+
 				dispatchFileActions(action, file);
 			}
 		});
 	}
 
-	async function dispatchFileActions(action: string, file: any, currentIndex?: number) {
+	async function dispatchFileActions(action: string, file: FileType, currentIndex?: number) {
 		switch (action) {
 			case 'Download': {
 				const value = window.prompt('Please enter a path on your local file system for download');
@@ -112,16 +116,14 @@
 
 			case 'OHIF': {
 				const folderForJSON = getFolderForJSON(file.fname);
-				//const newWindow = window.open(`${PUBLIC_DUMMY_URL}`, '_blank');
+				const newWindow = window.open(`${PUBLIC_DUMMY_URL}`, '_blank');
 
-				const response = await handleOhif(file.fname, folderForJSON, data.token);
+				const response = await handleOhif(file.fname, folderForJSON, data.token, 'file', file);
 
-				/*
 				if (response.status === 200) {
 					if (newWindow)
 						newWindow.location = `${PUBLIC_OHIF_URL}viewer/dicomjson?url=${PUBLIC_RESOURCES_URL}api/posts/${folderForJSON}.json`;
 				}
-				*/
 			}
 
 			default:
@@ -129,7 +131,7 @@
 		}
 	}
 
-	async function dispatchFolderActions(action: string, folder: any, currentIndex?: number) {
+	async function dispatchFolderActions(action: string, folder: FolderType, currentIndex?: number) {
 		switch (action) {
 			case 'Download': {
 				const value = window.prompt('Please enter a path on your local file system for download');
@@ -152,7 +154,12 @@
 			case 'OHIF': {
 				const newWindow = window.open(`${PUBLIC_DUMMY_URL}`, '_blank');
 
-				const response = await handleOhif(`${folder.path}/${folder.name}`, folder.name, data.token);
+				const response = await handleOhif(
+					`${folder.path}/${folder.name}`,
+					folder.name,
+					data.token,
+					'folder'
+				);
 
 				if (response.status === 200) {
 					if (newWindow)
@@ -162,14 +169,20 @@
 		}
 	}
 
-	function handleFolderChange(e: any) {
-		const folder = e.target.files;
-		handleUpload(folder, true, currentPath, data.token);
+	function handleFolderChange(event: Event) {
+		const inputElement = event.target as HTMLInputElement;
+		const folder = inputElement.files;
+		if (folder) {
+			handleUpload(folder, true, currentPath, data.token);
+		}
 	}
 
-	function handleFileChange(e: any) {
-		const files = e.target.files;
-		handleUpload(files, false, currentPath, data.token);
+	function handleFileChange(event: Event) {
+		const inputElement = event.target as HTMLInputElement;
+		const files = inputElement.files;
+		if (files) {
+			handleUpload(files, false, currentPath, data.token);
+		}
 	}
 
 	async function createFolder() {

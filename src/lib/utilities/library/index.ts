@@ -3,8 +3,9 @@ import { invalidate } from '$app/navigation';
 import { downloadStore, type DownloadState } from '$lib/stores/downloadStore';
 import { uploadStore, type UploadState } from '$lib/stores/uploadStore';
 import { fetchClient } from '$lib/client';
-
 import type { AxiosProgressEvent } from 'axios';
+import type { FileType } from '$lib/types/Data';
+import type { FileViewerType } from '$lib/types/Library';
 
 export function download(blob: Blob, name: string) {
 	const url = window.URL.createObjectURL(blob);
@@ -423,7 +424,7 @@ export function getCurrentlyActive(
 	return false;
 }
 
-export const fileViewerMap: any = {
+export const fileViewerMap: FileViewerType = {
 	stats: 'IFrameDisplay',
 	txt: 'IFrameDisplay',
 	html: 'IFrameDisplay',
@@ -451,13 +452,21 @@ export function getFileExtension(filename: string) {
 	return name;
 }
 
-export async function handleOhif(path: string, folderForJSON: string, token: string) {
+export async function handleOhif(
+	path: string,
+	folderForJSON: string,
+	token: string,
+	type: string,
+	file?: FileType
+) {
 	const response = await fetch('/api/uploadedfiles', {
 		method: 'POST',
 		body: JSON.stringify({
 			path,
 			token,
-			folderForJSON
+			folderForJSON,
+			type,
+			file
 		})
 	});
 

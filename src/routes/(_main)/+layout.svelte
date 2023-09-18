@@ -110,51 +110,6 @@
 													Dashboard
 												</a>
 											</li>
-
-											<li>
-												<a
-													href="/analyses"
-													class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-												>
-													<svg
-														class="h-6 w-6 shrink-0"
-														fill="none"
-														viewBox="0 0 24 24"
-														stroke-width="1.5"
-														stroke="currentColor"
-														aria-hidden="true"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-														/>
-													</svg>
-													Existing Analyses
-												</a>
-											</li>
-											<li>
-												<a
-													href="/fileuploads"
-													class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-												>
-													<svg
-														class="h-6 w-6 shrink-0"
-														fill="none"
-														viewBox="0 0 24 24"
-														stroke-width="1.5"
-														stroke="currentColor"
-														aria-hidden="true"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"
-														/>
-													</svg>
-													Create a New Analysis
-												</a>
-											</li>
 										</ul>
 									</li>
 									<li>
@@ -173,31 +128,15 @@
 													<span class="truncate">Data</span>
 												</a>
 											</li>
-											<li>
-												<a
-													href="/feeds"
-													class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-												>
-													<span
-														class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white"
-														>F</span
-													>
-													<span class="truncate">Feeds</span>
-												</a>
-											</li>
-											<li>
-												<a
-													href="/pacs"
-													class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-												>
-													<span
-														class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white"
-														>P</span
-													>
-													<span class="truncate">PACS</span>
-												</a>
-											</li>
 										</ul>
+									</li>
+									<li class="-mx-6 mt-auto">
+										<a
+											href="/logout"
+											class="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-white hover:bg-gray-800"
+										>
+											<span class="sr-only">logout</span>
+										</a>
 									</li>
 									<li class="-mx-6 mt-auto">
 										<a
@@ -256,51 +195,6 @@
 									Dashboard
 								</a>
 							</li>
-
-							<li>
-								<a
-									href="/analyses"
-									class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-								>
-									<svg
-										class="h-6 w-6 shrink-0"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke-width="1.5"
-										stroke="currentColor"
-										aria-hidden="true"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-										/>
-									</svg>
-									Existing Analyses
-								</a>
-							</li>
-							<li>
-								<a
-									href="/createfeed"
-									class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-								>
-									<svg
-										class="h-6 w-6 shrink-0"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke-width="1.5"
-										stroke="currentColor"
-										aria-hidden="true"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"
-										/>
-									</svg>
-									Create Analyses
-								</a>
-							</li>
 						</ul>
 					</li>
 					<li>
@@ -317,30 +211,6 @@
 										>U</span
 									>
 									<span class="truncate">Data</span>
-								</a>
-							</li>
-							<li>
-								<a
-									href="/feeds"
-									class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-								>
-									<span
-										class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white"
-										>F</span
-									>
-									<span class="truncate">Feeds</span>
-								</a>
-							</li>
-							<li>
-								<a
-									href="/pacs"
-									class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-								>
-									<span
-										class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white"
-										>P</span
-									>
-									<span class="truncate">PACS</span>
 								</a>
 							</li>
 						</ul>

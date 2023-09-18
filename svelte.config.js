@@ -15,8 +15,7 @@ const config = {
 		adapter: adapter(),
 
 		alias: {
-			'$components/*': 'src/lib/components/*',
-			$db: './src/db'
+			'$components/*': 'src/lib/components/*'
 		}
 	}
 };
