@@ -44,6 +44,7 @@ export const POST = async ({ request, url }) => {
 
 	const filePath = path.join(outputDirectory, fileName);
 
+	console.log('FilePath', filePath);
 
 	// Now, you can write the Buffer to a file
 	fs.writeFile(filePath, buffer, (error) => {

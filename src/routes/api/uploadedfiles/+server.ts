@@ -56,14 +56,14 @@ export const POST = async ({ request, fetch }) => {
 	const recursivePath: { [key: string]: [] } = {};
 	await recursivelyOrganizeFiles(path, token, recursivePath);
 
-	let payload: any = {
-		instances: []
-	};
-
-	let finalObject: any = {};
-	const seriesAcc: any = [];
+	const studiesAcc: any = {};
+	const seriesAcc: any = {};
+	const studies: any = [];
 
 	for (const path in recursivePath) {
+		const payload: any = {
+			instances: []
+		};
 		const files = recursivePath[path];
 
 		for (let i = 0; i < files.length; i++) {
@@ -86,6 +86,7 @@ export const POST = async ({ request, fetch }) => {
 			});
 
 			const blob = await responseBlob.blob();
+
 			await fetch(`/api/files/${fname}`, {
 				method: 'POST',
 				body: blob,
@@ -96,48 +97,50 @@ export const POST = async ({ request, fetch }) => {
 
 			const merged = await setupReader(blob);
 			const url = `dicomweb:${PUBLIC_RESOURCES_URL}api/files/ohif/${fname}`;
-			payload = {
-				...payload,
-				instances: [
-					...payload.instances,
-					{
-						url: url,
-						metadata: merged
-					}
-				]
-			};
+
+			payload['instances'].push({
+				url: url,
+				metadata: merged
+			});
 		}
 
-		const dataForSeries = payload.instances[0];
+		const data = payload.instances[0].metadata;
 
-		const studyTagsDict = studyTags(dataForSeries.metadata, payload.instances.length);
-		const seriesTagsDict = seriesTags(dataForSeries.metadata);
+		const studyDict = studyTags(data, payload.instances.length);
+		const seriesDict = seriesTags(data);
+		const studyID = studyDict['StudyInstanceUID'];
+		const seriesID = seriesDict['SeriesInstanceUID'];
 
-		finalObject = {
-			studies: [
-				{
-					...studyTagsDict
-				}
-			]
-		};
-
-		seriesAcc.push({
-			...seriesTagsDict,
-			...payload
-		});
+		studiesAcc[studyID] = { ...studyDict, series: [] };
+		seriesAcc[seriesID] = { ...seriesDict, ...payload };
 	}
 
-	finalObject.studies[0].series = seriesAcc;
+	for (const series in seriesAcc) {
+		const presentSeries = seriesAcc[series];
+		const { StudyInstanceUID: studyID } = presentSeries;
 
-	await fetch('/api/posts', {
+		if (studiesAcc[studyID]) {
+			studiesAcc[studyID].series.push(presentSeries);
+		}
+	}
+
+	for (const study in studiesAcc) {
+		const presentStudy = studiesAcc[study];
+		studies.push(presentStudy);
+	}
+
+	const finalObject = {
+		studies
+	};
+
+	const response = await fetch('/api/posts', {
 		method: 'POST',
 		body: JSON.stringify({ name: folderForJSON, finalObject }),
 		headers: {
 			'content-type': 'application/json'
 		}
 	});
-
-	return new Response(JSON.stringify({ success: 'true' }));
+	return response;
 };
 
 function createDataSet(dataSet: dicomParser.DataSet) {
@@ -234,6 +237,7 @@ function studyTags(metaData: any, numOfInstances: number) {
 
 function seriesTags(metaData: any) {
 	return {
+		StudyInstanceUID: metaData['StudyInstanceUID'],
 		SeriesDescription: metaData['SeriesDescription'] || '',
 		SeriesInstanceUID: metaData['SeriesInstanceUID'] || '',
 		SeriesNumber: metaData['SeriesNumber'] || '',
