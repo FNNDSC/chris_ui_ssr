@@ -93,6 +93,7 @@
   $: if (previewPayload.type === "file") {
     setViewer(previewPayload.payload.fname, "file");
   }
+  
 </script>
 
 {#if !ViewerType}

@@ -1,6 +1,7 @@
 import { redirect, error } from '@sveltejs/kit';
 import { fetchClient } from '$lib/client';
-import type { File } from '$lib/types/Library/';
+import type { FileType } from 'lucide-svelte';
+
 
 export const load = async ({ locals, cookies, params, depends }) => {
 	if (!locals.user) {
@@ -49,7 +50,7 @@ export const load = async ({ locals, cookies, params, depends }) => {
 		};
 	});
 
-	const files: File[] = fileList.data ? fileList.data : [];
+	const files: FileType[] = fileList.data ? fileList.data : [];
 
 	return {
 		folders,

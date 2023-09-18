@@ -2,6 +2,8 @@ import { fetchClient } from '$lib/client.js';
 import * as dicomParser from 'dicom-parser';
 import { getFileName } from '$lib/utilities/library/index.js';
 import { PUBLIC_API_URL, PUBLIC_RESOURCES_URL } from '$env/static/public';
+import type Client from '@fnndsc/chrisapi';
+import type { FileType } from '$lib/types/Data/index.js';
 
 async function setupReader(blob: Blob) {
 	const buffer = Buffer.from(await blob.arrayBuffer());
@@ -11,7 +13,7 @@ async function setupReader(blob: Blob) {
 	return dictionary;
 }
 
-async function getFileForPath(path: string, client: any) {
+async function getFileForPath(path: string, client: Client) {
 	const pathList = await client.getFileBrowserPath(path);
 	const files = await pathList.getFiles({ limit: 100000 });
 	return files;
@@ -48,31 +50,69 @@ async function recursivelyOrganizeFiles(path: string, token: string, recursivePa
 	} else return;
 }
 
+type DicomValue = Record<string, string | number | number[] | string[] | undefined>;
+
+interface PayloadInstance {
+	url: string;
+	metadata: DicomValue;
+}
+
+type DicomTagType = 'string' | 'int' | 'uint16' | 'array';
+
+interface DicomTagValue {
+	header: string;
+	type: DicomTagType;
+	convert?: boolean;
+}
+
+type DicomTagMap = Record<string, string | DicomTagValue>;
+
+type Study = DicomValue & { series: SeriesValue[] };
+
+type StudyAccumulator = {
+	[key: string]: Study;
+};
+
+type SeriesValue = DicomValue | { instances: PayloadInstance[] };
+
+type SeriesAccumulator = {
+	[key: string]: SeriesValue;
+};
+
+type Studies = Study[];
+
 export const POST = async ({ request, fetch }) => {
 	const data = await request.json();
 
-	const { path, token, folderForJSON } = data;
+	const { path, token, folderForJSON, type, file } = data;
 
-	const recursivePath: { [key: string]: [] } = {};
-	await recursivelyOrganizeFiles(path, token, recursivePath);
+	const recursivePath: { [key: string]: FileType[] } = {};
 
-	const studiesAcc: any = {};
-	const seriesAcc: any = {};
-	const studies: any = [];
+	if (type === 'folder') {
+		await recursivelyOrganizeFiles(path, token, recursivePath);
+	} else if (type === 'file') {
+		recursivePath[path] = [file];
+	}
+
+	const studiesAcc: StudyAccumulator = {};
+	const seriesAcc: SeriesAccumulator = {};
+	const studies: Studies = [];
 
 	for (const path in recursivePath) {
-		const payload: any = {
+		const payload: { instances: PayloadInstance[] } = {
 			instances: []
 		};
 		const files = recursivePath[path];
 
 		for (let i = 0; i < files.length; i++) {
-			const file: any = files[i];
+			const file: FileType = files[i];
 
 			const client = fetchClient(token);
+
 			const fileList = await client.getUploadedFiles({
 				fname: file.fname
 			});
+
 			const { id, fname } = fileList.data[0];
 			const fileName = getFileName(fname);
 			const urlToFetch = `${PUBLIC_API_URL}uploadedfiles/${id}/${fileName}`;
@@ -96,6 +136,7 @@ export const POST = async ({ request, fetch }) => {
 			});
 
 			const merged = await setupReader(blob);
+
 			const url = `dicomweb:${PUBLIC_RESOURCES_URL}api/files/ohif/${fname}`;
 
 			payload['instances'].push({
@@ -108,19 +149,32 @@ export const POST = async ({ request, fetch }) => {
 
 		const studyDict = studyTags(data, payload.instances.length);
 		const seriesDict = seriesTags(data);
-		const studyID = studyDict['StudyInstanceUID'];
-		const seriesID = seriesDict['SeriesInstanceUID'];
+		const studyID = studyDict['StudyInstanceUID'] as string;
+		const seriesID = seriesDict['SeriesInstanceUID'] as string;
 
+		//Accumulate all the studies
 		studiesAcc[studyID] = { ...studyDict, series: [] };
-		seriesAcc[seriesID] = { ...seriesDict, ...payload };
+
+		//Accumulate all the series
+		const seriesEntry: DicomValue | { instances: PayloadInstance[] } = {
+			...seriesDict,
+			...payload
+		};
+
+		seriesAcc[seriesID] = seriesEntry;
+
+		console.log('SeriesAcc', seriesAcc);
 	}
 
 	for (const series in seriesAcc) {
 		const presentSeries = seriesAcc[series];
-		const { StudyInstanceUID: studyID } = presentSeries;
 
-		if (studiesAcc[studyID]) {
-			studiesAcc[studyID].series.push(presentSeries);
+		if ('StudyInstanceUID' in presentSeries) {
+			const studyID: string = presentSeries.StudyInstanceUID as string;
+
+			if (studiesAcc[studyID]) {
+				studiesAcc[studyID].series.push(presentSeries);
+			}
 		}
 	}
 
@@ -145,7 +199,7 @@ export const POST = async ({ request, fetch }) => {
 
 function createDataSet(dataSet: dicomParser.DataSet) {
 	// Define a mapping of DICOM element tags to headers and their types
-	const dicomTagToHeader: any = {
+	const dicomTagToHeader: DicomTagMap = {
 		x00080020: 'StudyDate',
 		x00080030: 'StudyTime',
 		x00100010: 'PatientName',
@@ -190,37 +244,37 @@ function createDataSet(dataSet: dicomParser.DataSet) {
 	const dicomElements = Object.keys(dicomTagToHeader);
 
 	// Extract values from the parsed DICOM dataset and store in a dictionary
-	const dicomValues: any = {};
+	const dicomValues: DicomValue = {};
+
 	dicomElements.forEach((elementTag) => {
 		const tagInfo = dicomTagToHeader[elementTag];
-		let value: any;
+		let value: string | number | string[] | number[] | undefined;
 
-		if (tagInfo && tagInfo.type === 'uint16') {
+		if (typeof tagInfo === 'string') {
+			value = dataSet.string(elementTag);
+		} else if (typeof tagInfo === 'object' && tagInfo.type === 'uint16') {
 			value = dataSet.uint16(elementTag); // Convert to numerical value
-		} else if (tagInfo && tagInfo.type === 'int') {
-			//@ts-ignore
-			value = parseInt(dataSet.string(elementTag));
+		} else if (typeof tagInfo === 'object' && tagInfo.type === 'int') {
+			const stringValue = dataSet.string(elementTag);
+			value = stringValue ? parseInt(stringValue) : undefined;
 		} else if (tagInfo && tagInfo.type === 'array') {
 			const valueToSplit = dataSet.string(elementTag);
 			if (valueToSplit) {
 				value = valueToSplit.split('\\');
 			}
-
-			if (tagInfo.convert === true && value) {
+			if (tagInfo.convert === true && Array.isArray(value)) {
 				value = value.map(Number);
 			}
-		} else {
-			value = dataSet.string(elementTag); // Default: string value
 		}
 
-		const header = tagInfo.header ? tagInfo.header : tagInfo;
+		const header = typeof tagInfo === 'string' ? tagInfo : tagInfo.header;
 		dicomValues[header] = value;
 	});
 
 	return dicomValues;
 }
 
-function studyTags(metaData: any, numOfInstances: number) {
+function studyTags(metaData: DicomValue, numOfInstances: number) {
 	return {
 		StudyInstanceUID: metaData['StudyInstanceUID'] || '',
 		StudyDescription: metaData['StudyDescription'] || '',
@@ -235,7 +289,9 @@ function studyTags(metaData: any, numOfInstances: number) {
 	};
 }
 
-function seriesTags(metaData: any) {
+function seriesTags(
+	metaData: DicomValue
+): Record<keyof DicomValue, string | number | number[] | string[] | undefined> {
 	return {
 		StudyInstanceUID: metaData['StudyInstanceUID'],
 		SeriesDescription: metaData['SeriesDescription'] || '',
