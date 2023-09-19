@@ -1,7 +1,6 @@
 import { redirect, error } from '@sveltejs/kit';
 import { fetchClient } from '$lib/client';
-import type { FileType } from 'lucide-svelte';
-
+import type { FileType } from '$lib/types/Data/index.js';
 
 export const load = async ({ locals, cookies, params, depends }) => {
 	if (!locals.user) {
