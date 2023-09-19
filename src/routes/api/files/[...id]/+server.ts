@@ -1,4 +1,4 @@
-import { json } from '@sveltejs/kit';
+import { json, error } from '@sveltejs/kit';
 import { getFileName } from '$lib/utilities/library/index.js';
 import fs from 'fs';
 import path from 'path';
@@ -12,7 +12,9 @@ export const GET = async ({ url }) => {
 	const data = await fs.promises.readFile(readPath);
 
 	if (!data) {
-		console.warn('No file was found');
+		throw error(404, {
+			message: 'No File was Found'
+		});
 	}
 
 	return new Response(data, {
@@ -30,30 +32,32 @@ export const GET = async ({ url }) => {
 };
 
 export const POST = async ({ request, url }) => {
-	const data = await request.blob();
+	try {
+		const data = await request.blob();
 
-	const buffer = Buffer.from(await data.arrayBuffer());
+		const buffer = Buffer.from(await data.arrayBuffer());
 
-	const outputDirectory = 'ohif/' + url.pathname.split('files/')[1];
+		const outputDirectory = 'ohif/' + url.pathname.split('files/')[1];
 
-	if (!fs.existsSync(outputDirectory)) {
-		fs.mkdirSync(outputDirectory, { recursive: true }); // Create directory recursively
-	}
-
-	const fileName = getFileName(outputDirectory);
-
-	const filePath = path.join(outputDirectory, fileName);
-
-	console.log('FilePath', filePath);
-
-	// Now, you can write the Buffer to a file
-	fs.writeFile(filePath, buffer, (error) => {
-		if (error) {
-			console.error('Error writing file:', error);
-		} else {
-			console.log('File has been saved.');
+		if (!fs.existsSync(outputDirectory)) {
+			fs.mkdirSync(outputDirectory, { recursive: true }); // Create directory recursively
 		}
-	});
+
+		const fileName = getFileName(outputDirectory);
+
+		const filePath = path.join(outputDirectory, fileName);
+
+		// Now, you can write the Buffer to a file
+		fs.writeFile(filePath, buffer, (error) => {
+			if (error) {
+				throw new Error(error.message);
+			}
+		});
+	} catch (errorMessage) {
+		throw error(404, {
+			message: errorMessage as string
+		});
+	}
 
 	return json({
 		status: 200

@@ -1,9 +1,10 @@
-import { fetchClient } from '$lib/client.js';
+import { error } from '@sveltejs/kit';
 import * as dicomParser from 'dicom-parser';
-import { getFileName } from '$lib/utilities/library/index.js';
-import { PUBLIC_API_URL, PUBLIC_RESOURCES_URL } from '$env/static/public';
 import type Client from '@fnndsc/chrisapi';
+import { fetchClient } from '$lib/client.js';
+import { getFileName } from '$lib/utilities/library/index.js';
 import type { FileType } from '$lib/types/Data/index.js';
+import { PUBLIC_API_URL, PUBLIC_RESOURCES_URL } from '$env/static/public';
 
 async function setupReader(blob: Blob) {
 	const buffer = Buffer.from(await blob.arrayBuffer());
@@ -109,61 +110,77 @@ export const POST = async ({ request, fetch }) => {
 
 			const client = fetchClient(token);
 
-			const fileList = await client.getUploadedFiles({
-				fname: file.fname
-			});
+			try {
+				const fileList = await client.getUploadedFiles({
+					fname: file.fname
+				});
 
-			const { id, fname } = fileList.data[0];
-			const fileName = getFileName(fname);
-			const urlToFetch = `${PUBLIC_API_URL}uploadedfiles/${id}/${fileName}`;
+				const { id, fname } = fileList.data[0];
+				const fileName = getFileName(fname);
+				const urlToFetch = `${PUBLIC_API_URL}uploadedfiles/${id}/${fileName}`;
 
-			const responseBlob = await fetch(urlToFetch, {
-				method: 'GET',
-				headers: {
-					Authorization: `Token ${token}`,
-					'Content-Type': 'blob'
+				const responseBlob = await fetch(urlToFetch, {
+					method: 'GET',
+					headers: {
+						Authorization: `Token ${token}`,
+						'Content-Type': 'blob'
+					}
+				});
+
+				const blob = await responseBlob.blob();
+
+				try {
+					await fetch(`/api/files/${fname}`, {
+						method: 'POST',
+						body: blob,
+						headers: {
+							'content-type': `${blob.type}`
+						}
+					});
+				} catch (errorMessage) {
+					throw error(400, {
+						message: errorMessage as string
+					});
 				}
-			});
 
-			const blob = await responseBlob.blob();
+				const merged = await setupReader(blob);
 
-			await fetch(`/api/files/${fname}`, {
-				method: 'POST',
-				body: blob,
-				headers: {
-					'content-type': `${blob.type}`
-				}
-			});
+				const url = `dicomweb:${PUBLIC_RESOURCES_URL}api/files/ohif/${fname}`;
 
-			const merged = await setupReader(blob);
-
-			const url = `dicomweb:${PUBLIC_RESOURCES_URL}api/files/ohif/${fname}`;
-
-			payload['instances'].push({
-				url: url,
-				metadata: merged
-			});
+				payload['instances'].push({
+					url: url,
+					metadata: merged
+				});
+			} catch (errorMessage) {
+				throw error(500, {
+					message: 'Internal Server Error'
+				});
+			}
 		}
 
-		const data = payload.instances[0].metadata;
+		try {
+			const data = payload.instances[0].metadata;
 
-		const studyDict = studyTags(data, payload.instances.length);
-		const seriesDict = seriesTags(data);
-		const studyID = studyDict['StudyInstanceUID'] as string;
-		const seriesID = seriesDict['SeriesInstanceUID'] as string;
+			const studyDict = studyTags(data, payload.instances.length);
+			const seriesDict = seriesTags(data);
+			const studyID = studyDict['StudyInstanceUID'] as string;
+			const seriesID = seriesDict['SeriesInstanceUID'] as string;
 
-		//Accumulate all the studies
-		studiesAcc[studyID] = { ...studyDict, series: [] };
+			//Accumulate all the studies
+			studiesAcc[studyID] = { ...studyDict, series: [] };
 
-		//Accumulate all the series
-		const seriesEntry: DicomValue | { instances: PayloadInstance[] } = {
-			...seriesDict,
-			...payload
-		};
+			//Accumulate all the series
+			const seriesEntry: DicomValue | { instances: PayloadInstance[] } = {
+				...seriesDict,
+				...payload
+			};
 
-		seriesAcc[seriesID] = seriesEntry;
-
-		console.log('SeriesAcc', seriesAcc);
+			seriesAcc[seriesID] = seriesEntry;
+		} catch (errorMessage) {
+			throw error(500, {
+				message: 'Internal Server Error'
+			});
+		}
 	}
 
 	for (const series in seriesAcc) {
@@ -187,14 +204,20 @@ export const POST = async ({ request, fetch }) => {
 		studies
 	};
 
-	const response = await fetch('/api/posts', {
-		method: 'POST',
-		body: JSON.stringify({ name: folderForJSON, finalObject }),
-		headers: {
-			'content-type': 'application/json'
-		}
-	});
-	return response;
+	try {
+		const response = await fetch('/api/posts', {
+			method: 'POST',
+			body: JSON.stringify({ name: folderForJSON, finalObject }),
+			headers: {
+				'content-type': 'application/json'
+			}
+		});
+		return response;
+	} catch (errorMessage) {
+		throw error(404, {
+			message: errorMessage as string
+		});
+	}
 };
 
 function createDataSet(dataSet: dicomParser.DataSet) {

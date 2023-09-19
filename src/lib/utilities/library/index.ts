@@ -4,7 +4,7 @@ import { downloadStore, type DownloadState } from '$lib/stores/downloadStore';
 import { uploadStore, type UploadState } from '$lib/stores/uploadStore';
 import { fetchClient } from '$lib/client';
 import type { AxiosProgressEvent } from 'axios';
-import type { FileType } from '$lib/types/Data';
+import type { FileType, FolderType } from '$lib/types/Data';
 import type { FileViewerType } from '$lib/types/Library';
 
 export function download(blob: Blob, name: string) {
@@ -64,8 +64,6 @@ export async function handleFolderDelete(folder: any, token: string) {
 }
 
 export async function handleFileDownload(file: any, token: string, path: string | null) {
-	console.log('Handle File Download');
-
 	const response = await fetch('/api/downloads', {
 		method: 'POST',
 		body: JSON.stringify({
@@ -74,7 +72,24 @@ export async function handleFileDownload(file: any, token: string, path: string 
 			userDirectory: path
 		})
 	});
-	/*
+
+	return response;
+}
+
+export async function handleFolderDownload(folder: any, token: string, path: string | null) {
+	const response = await fetch('/api/downloads', {
+		method: 'POST',
+		body: JSON.stringify({
+			fname: `${folder.path}/${folder.name}`,
+			token,
+			userDirectory: path
+		})
+	});
+
+	return response;
+}
+
+export async function handleZipDownloadFile(file: FileType, token: string) {
 	const fileData = await fetchFile(file.fname, token, 'file');
 	const fileSize = fileData.data.fsize;
 	const fileName = getFileName(fileData.data.fname);
@@ -114,22 +129,9 @@ export async function handleFileDownload(file: any, token: string, path: string 
 		const blob = await fileData.getFileBlob();
 		download(blob, fileName);
 	}
-	*/
 }
 
-export async function handleFolderDownload(folder: any, token: string, path: string | null) {
-	console.log('Folder Download');
-
-	const response = await fetch('/api/downloads', {
-		method: 'POST',
-		body: JSON.stringify({
-			fname: `${folder.path}/${folder.name}`,
-			token,
-			userDirectory: path
-		})
-	});
-
-	/*
+export async function handleZipFolderDownload(folder: FolderType, token: string) {
 	downloadStore.setNewNotification();
 	downloadStore.setFolderStep(folder.name, 'Preparing to zip');
 
@@ -140,7 +142,7 @@ export async function handleFolderDownload(folder: any, token: string, path: str
 
 	const dircopyList = dircopyPlugin.getItems() as any;
 
-	if (!dircopyList) {
+	if (!dircopyList || dircopyList.length === 0) {
 		downloadStore.setFolderStep(folder.name, 'Download Failed');
 		return;
 	}
@@ -179,7 +181,7 @@ export async function handleFolderDownload(folder: any, token: string, path: str
 		exec: 'zip -r %outputDir/parent.zip %inputDir'
 	};
 
-	const zipPluginList: any = await client.getPlugins({
+	const zipPluginList = await client.getPlugins({
 		name_exact: 'pl-pfdorun'
 	});
 
@@ -228,10 +230,8 @@ export async function handleFolderDownload(folder: any, token: string, path: str
 	if (files?.length === 0 || ['cancelled', 'finishedWithError'].includes(status)) {
 		downloadStore.setFolderStep(folder.name, 'Download Cancelled');
 		return;
-	} else {
+	} else if (files) {
 		downloadStore.setFolderStep(folder.name, 'Preparing to Download');
-
-		//@ts-ignore
 		const file = files[0];
 
 		const fileName = getFileName(file.data.fname);
@@ -266,7 +266,6 @@ export async function handleFolderDownload(folder: any, token: string, path: str
 			return;
 		}
 	}
-	*/
 }
 
 export async function handleUpload(

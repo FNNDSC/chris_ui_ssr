@@ -16,7 +16,9 @@
 		createNewFolder,
 		getFileName,
 		getCurrentlyActive,
-		getFolderForJSON
+		getFolderForJSON,
+		handleZipFolderDownload,
+		handleZipDownloadFile
 	} from '$lib/utilities/library';
 	import { downloadStore } from '$lib/stores/downloadStore';
 	import { uploadStore } from '$lib/stores/uploadStore';
@@ -106,6 +108,11 @@
 				break;
 			}
 
+			case 'Zip': {
+				handleZipDownloadFile(file, data.token);
+				break;
+			}
+
 			case 'Preview': {
 				open = true;
 				previewPayload['type'] = 'file';
@@ -140,6 +147,11 @@
 			}
 			case 'Delete': {
 				handleFolderDelete(folder, data.token);
+				break;
+			}
+
+			case 'Zip': {
+				handleZipFolderDownload(folder, data.token);
 				break;
 			}
 
