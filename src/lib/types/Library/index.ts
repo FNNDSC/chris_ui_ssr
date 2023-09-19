@@ -1,14 +1,4 @@
-import type { FolderType, FileType } from '../Data';
-
-type ViewerComponent =
-	| 'IFrameDisplay'
-	| 'PdfDisplay'
-	| 'JsonDisplay'
-	| 'ImageDisplay'
-	| 'DcmDisplay'
-	| 'CatchallDisplay'
-	| 'NiftiDisplay'
-	| 'XtkDisplay';
+type ViewerComponent = 'IFrameDisplay' | 'ImageDisplay' | 'DcmDisplay';
 
 export type FileViewerType = Record<string, ViewerComponent>;
 

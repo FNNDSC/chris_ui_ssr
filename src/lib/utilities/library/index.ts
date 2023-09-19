@@ -149,6 +149,8 @@ export async function handleZipFolderDownload(folder: FolderType, token: string)
 
 	const dircopy = dircopyList[0];
 
+	
+
 	const dircopyParams = {
 		dir: folder.path,
 		previous_id: 0,
@@ -427,23 +429,12 @@ export const fileViewerMap: FileViewerType = {
 	stats: 'IFrameDisplay',
 	txt: 'IFrameDisplay',
 	html: 'IFrameDisplay',
-	pdf: 'PdfDisplay',
-	csv: 'IFrameDisplay',
 	ctab: 'IFrameDisplay',
-	json: 'JsonDisplay',
 	png: 'ImageDisplay',
 	jpg: 'ImageDisplay',
 	jpeg: 'ImageDisplay',
 	gif: 'ImageDisplay',
-	dcm: 'DcmDisplay',
-	default: 'CatchallDisplay',
-	nii: 'NiftiDisplay',
-	gz: 'CatchallDisplay',
-	mgz: 'XtkDisplay',
-	fsm: 'XtkDisplay',
-	crv: 'XtkDisplay',
-	smoothwm: 'XtkDisplay',
-	pial: 'XtkDisplay'
+	dcm: 'DcmDisplay'
 };
 
 export function getFileExtension(filename: string) {
