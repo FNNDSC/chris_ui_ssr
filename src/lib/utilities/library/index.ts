@@ -48,13 +48,13 @@ export async function fetchFile(fname: string, token: string, type: string) {
 	return type === 'file' ? fetchedFile[0] : fetchedFile;
 }
 
-export async function handleFileDelete(file: any, token: string) {
+export async function handleFileDelete(file: FileType, token: string) {
 	const fileData = await fetchFile(file.fname, token, 'file');
 	fileData.delete();
 	invalidate('app:reload');
 }
 
-export async function handleFolderDelete(folder: any, token: string) {
+export async function handleFolderDelete(folder: FolderType, token: string) {
 	const name = `${folder.path}/${folder.name}`;
 	const files = await fetchFile(name, token, 'folder');
 	for (const file of files) {
@@ -63,7 +63,7 @@ export async function handleFolderDelete(folder: any, token: string) {
 	invalidate('app:reload');
 }
 
-export async function handleFileDownload(file: any, token: string, path: string | null) {
+export async function handleFileDownload(file: FileType, token: string, path: string | null) {
 	const response = await fetch('/api/downloads', {
 		method: 'POST',
 		body: JSON.stringify({
@@ -76,7 +76,7 @@ export async function handleFileDownload(file: any, token: string, path: string 
 	return response;
 }
 
-export async function handleFolderDownload(folder: any, token: string, path: string | null) {
+export async function handleFolderDownload(folder: FolderType, token: string, path: string | null) {
 	const response = await fetch('/api/downloads', {
 		method: 'POST',
 		body: JSON.stringify({
@@ -148,8 +148,6 @@ export async function handleZipFolderDownload(folder: FolderType, token: string)
 	}
 
 	const dircopy = dircopyList[0];
-
-	
 
 	const dircopyParams = {
 		dir: folder.path,

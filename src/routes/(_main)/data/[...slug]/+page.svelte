@@ -36,6 +36,7 @@
 		payload: undefined,
 		currentIndex: undefined
 	};
+
 	let fileInput: any;
 	let folderInput: any;
 	let newFolder: string;
@@ -99,7 +100,10 @@
 			case 'Download': {
 				const value = window.prompt('Please enter a path on your local file system for download');
 
-				handleFileDownload(file, data.token, value);
+				if (value) {
+					handleFileDownload(file, data.token, value);
+				}
+
 				break;
 			}
 
@@ -142,7 +146,9 @@
 		switch (action) {
 			case 'Download': {
 				const value = window.prompt('Please enter a path on your local file system for download');
-				handleFolderDownload(folder, data.token, value);
+				if (value) {
+					handleFolderDownload(folder, data.token, value);
+				}
 				break;
 			}
 			case 'Delete': {
