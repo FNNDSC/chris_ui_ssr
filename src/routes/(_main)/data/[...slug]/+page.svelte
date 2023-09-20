@@ -181,7 +181,7 @@
 
 				if (response.status === 200) {
 					if (newWindow)
-						newWindow.location = `${PUBLIC_OHIF_URL}viewer/dicomjson?url=${PUBLIC_RESOURCES_URL}api/posts/${folder.name}.json`;
+						newWindow.location = `${PUBLIC_OHIF_URL}viewer/dicomjson?url=${PUBLIC_RESOURCES_URL}api/jsonfile/${folder.name}.json`;
 				}
 			}
 		}

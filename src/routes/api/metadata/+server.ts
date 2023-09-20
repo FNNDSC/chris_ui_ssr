@@ -205,7 +205,7 @@ export const POST = async ({ request, fetch }) => {
 	};
 
 	try {
-		const response = await fetch('/api/posts', {
+		const response = await fetch('/api/jsonfile', {
 			method: 'POST',
 			body: JSON.stringify({ name: folderForJSON, finalObject }),
 			headers: {
