@@ -52,8 +52,6 @@ export const POST = async ({ request, fetch }) => {
 		fs.writeFile(filePath, buffer, (error) => {
 			if (error) {
 				console.error('Error writing File:', error);
-			} else {
-				console.log('File has been saved');
 			}
 		});
 	}

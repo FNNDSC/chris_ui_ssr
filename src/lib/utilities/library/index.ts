@@ -447,7 +447,7 @@ export async function handleOhif(
 	type: string,
 	file?: FileType
 ) {
-	const response = await fetch('/api/uploadedfiles', {
+	const response = await fetch('/api/metadata', {
 		method: 'POST',
 		body: JSON.stringify({
 			path,
