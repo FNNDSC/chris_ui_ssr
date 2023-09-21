@@ -133,7 +133,7 @@
 
 				if (response.status === 200) {
 					if (newWindow)
-						newWindow.location = `${PUBLIC_OHIF_URL}viewer/dicomjson?url=${PUBLIC_RESOURCES_URL}api/posts/${folderForJSON}.json`;
+						newWindow.location = `${PUBLIC_OHIF_URL}viewer/dicomjson?url=${PUBLIC_RESOURCES_URL}api/jsonfile/${folderForJSON}.json`;
 				}
 			}
 
