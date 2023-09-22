@@ -19,6 +19,7 @@ import {
 import dicomParser from 'dicom-parser';
 import cornerstoneDICOMImageLoader from '@cornerstonejs/dicom-image-loader';
 import cornerstoneFileImageLoader from 'cornerstone-file-image-loader';
+
 import { init as csToolsInit } from '@cornerstonejs/tools';
 import { ViewportType } from '@cornerstonejs/core/dist/esm/enums';
 
