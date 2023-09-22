@@ -217,7 +217,7 @@
 {#if open}
 	<Dialog bind:open closeOnEscape={false} closeOnOutsideClick={false}>
 		<DialogContent class="h-full sm:max-w-full">
-			{#if browser}
+			{#if browser && Carousel}
 				<svelte:component
 					this={Carousel}
 					{files}

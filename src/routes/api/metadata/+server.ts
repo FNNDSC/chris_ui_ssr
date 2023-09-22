@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import * as dicomParser from 'dicom-parser';
+import module from 'dicom-parser';
 import type Client from '@fnndsc/chrisapi';
 import { fetchClient } from '$lib/client.js';
 import { getFileName } from '$lib/utilities/library/index.js';
@@ -7,11 +7,15 @@ import type { FileType } from '$lib/types/Data/index.js';
 import { PUBLIC_API_URL, PUBLIC_RESOURCES_URL } from '$env/static/public';
 
 async function setupReader(blob: Blob) {
-	const buffer = Buffer.from(await blob.arrayBuffer());
-	const bufferArray = new Uint8Array(buffer);
-	const dataSet = dicomParser.parseDicom(bufferArray);
-	const dictionary = createDataSet(dataSet);
-	return dictionary;
+	try {
+		const buffer = Buffer.from(await blob.arrayBuffer());
+		const bufferArray = new Uint8Array(buffer);
+		const dataSet = module.parseDicom(bufferArray);
+		const dictionary = createDataSet(dataSet);
+		return dictionary;
+	} catch (error) {
+		console.log('Error', error);
+	}
 }
 
 async function getFileForPath(path: string, client: Client) {
@@ -153,7 +157,7 @@ export const POST = async ({ request, fetch }) => {
 				});
 			} catch (errorMessage) {
 				throw error(500, {
-					message: 'Internal Server Error'
+					message: errorMessage as string
 				});
 			}
 		}
@@ -178,7 +182,7 @@ export const POST = async ({ request, fetch }) => {
 			seriesAcc[seriesID] = seriesEntry;
 		} catch (errorMessage) {
 			throw error(500, {
-				message: 'Internal Server Error'
+				message: errorMessage as string
 			});
 		}
 	}

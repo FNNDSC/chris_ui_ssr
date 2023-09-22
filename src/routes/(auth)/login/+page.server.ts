@@ -1,10 +1,9 @@
-import Client from '@fnndsc/chrisapi';
-import { dev } from '$app/environment';
 import { fail, error, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { superValidate } from 'sveltekit-superforms/server';
 import { PUBLIC_AUTH_URL } from '$env/static/public';
 import type { Action, Actions, PageServerLoad } from './$types';
+import { getClientByEnvironment } from '$lib/client';
 
 const schema = z.object({
 	username: z.string(),
@@ -31,18 +30,14 @@ const login: Action = async ({ cookies, request }: any) => {
 	const authURL = PUBLIC_AUTH_URL;
 
 	try {
-		//@ts-ignore
-		const getAuthToken = dev ? Client.getAuthToken : Client.default.getAuthToken;
+		const Client = getClientByEnvironment();
+		const getAuthToken = Client.getAuthToken;
 		const token = await getAuthToken(authURL, form.data.username, form.data.password);
 		cookies.set('session', token, {
 			path: '/',
 			httpOnly: true,
-			// only requests from same site can send cookies
-			// https://developer.mozilla.org/en-US/docs/Glossary/CSRF
 			sameSite: 'strict',
-			// only sent over HTTPS in production
 			secure: process.env.NODE_ENV === 'production',
-			// set cookie to expire after a month
 			maxAge: 60 * 60 * 24 * 30
 		});
 	} catch (reason: any) {
