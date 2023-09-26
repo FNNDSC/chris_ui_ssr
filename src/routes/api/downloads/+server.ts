@@ -2,7 +2,7 @@ import { fetchClient } from '$lib/client.js';
 import { getFileName } from '$lib/utilities/library/index.js';
 import fs from 'fs';
 import path from 'path';
-import { PUBLIC_API_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 interface UploadedFile {
 	id: number;
@@ -35,7 +35,7 @@ export const POST = async ({ request, fetch }) => {
 	for (let i = 0; i < files.length; i++) {
 		const file = files[i];
 		const fileName = getFileName(file.fname);
-		const urlPath = `${PUBLIC_API_URL}uploadedfiles/${file.id}/${fileName}`;
+		const urlPath = `${env.PUBLIC_API_URL}uploadedfiles/${file.id}/${fileName}`;
 
 		const response = await fetch(urlPath, {
 			method: 'GET',

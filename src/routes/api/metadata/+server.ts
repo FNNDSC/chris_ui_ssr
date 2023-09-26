@@ -4,7 +4,7 @@ import type Client from '@fnndsc/chrisapi';
 import { fetchClient } from '$lib/client.js';
 import { getFileName } from '$lib/utilities/library/index.js';
 import type { FileType } from '$lib/types/Data/index.js';
-import { PUBLIC_API_URL, PUBLIC_RESOURCES_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 async function setupReader(blob: Blob) {
 	try {
@@ -121,7 +121,7 @@ export const POST = async ({ request, fetch }) => {
 
 				const { id, fname } = fileList.data[0];
 				const fileName = getFileName(fname);
-				const urlToFetch = `${PUBLIC_API_URL}uploadedfiles/${id}/${fileName}`;
+				const urlToFetch = `${env.PUBLIC_API_URL}uploadedfiles/${id}/${fileName}`;
 
 				const responseBlob = await fetch(urlToFetch, {
 					method: 'GET',
@@ -149,7 +149,7 @@ export const POST = async ({ request, fetch }) => {
 
 				const merged = await setupReader(blob);
 
-				const url = `dicomweb:${PUBLIC_RESOURCES_URL}api/files/ohif/${fname}`;
+				const url = `dicomweb:${env.PUBLIC_RESOURCES_URL}api/files/ohif/${fname}`;
 
 				payload['instances'].push({
 					url: url,
