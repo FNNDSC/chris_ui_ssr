@@ -1,7 +1,7 @@
 import { fail, error, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { superValidate } from 'sveltekit-superforms/server';
-import { env } from '$env/dynamic/public';
+import { PUBLIC_AUTH_URL } from '$env/static/public';
 import type { Action, Actions, PageServerLoad } from './$types';
 import { getClientByEnvironment } from '$lib/client';
 
@@ -27,7 +27,7 @@ const login: Action = async ({ cookies, request }: any) => {
 		return fail(400, { form });
 	}
 
-	const authURL = env.PUBLIC_AUTH_URL;
+	const authURL = PUBLIC_AUTH_URL;
 
 	try {
 		const Client = getClientByEnvironment();
@@ -42,7 +42,8 @@ const login: Action = async ({ cookies, request }: any) => {
 			maxAge: 60 * 60 * 24 * 30
 		});
 	} catch (reason: any) {
-		console.log('Reason', reason.response && reason.response.data, reason.message);
+	
+		console.log('Reason', reason);
 		const data = reason.response ? reason.response.data : reason.message;
 		throw error(400, data);
 	}

@@ -19,4 +19,4 @@ COPY --from=builder --chown=nodeuser:nodeuser /app/node_modules node_modules/
 COPY package.json .
 COPY .env .env
 EXPOSE 3000
-CMD ["node", "-r", "dotenv/config", "build"]
+CMD ["sh", "-c", "ORIGIN='http://localhost:3000' node -r dotenv/config build"]
