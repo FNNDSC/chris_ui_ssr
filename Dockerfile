@@ -4,7 +4,6 @@ WORKDIR /app
 COPY package*.json /app
 RUN npm ci
 COPY . .
-COPY .env .env
 RUN npm run build
 RUN npm prune --production
 
@@ -17,6 +16,8 @@ WORKDIR /app
 COPY --from=builder --chown=nodeuser:nodeuser /app/build build/
 COPY --from=builder --chown=nodeuser:nodeuser /app/node_modules node_modules/
 COPY package.json .
-COPY .env .env
+COPY .env.local .env
+COPY start.sh start.sh
+RUN  start.sh
 EXPOSE 3000
 CMD ["node", "-r", "dotenv/config", "build"]
