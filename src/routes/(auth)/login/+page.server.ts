@@ -32,8 +32,10 @@ const login: Action = async ({ cookies, request }: any) => {
 	try {
 		const Client = getClientByEnvironment();
 		const getAuthToken = Client.getAuthToken;
-		console.log('Token', getAuthToken, form.data, authURL);
 		const token = await getAuthToken(authURL, form.data.username, form.data.password);
+
+		console.log("Token", token);
+
 		cookies.set('session', token, {
 			path: '/',
 			httpOnly: true,
@@ -41,8 +43,8 @@ const login: Action = async ({ cookies, request }: any) => {
 			secure: process.env.NODE_ENV === 'production',
 			maxAge: 60 * 60 * 24 * 30
 		});
+		
 	} catch (reason: any) {
-	
 		console.log('Reason', reason);
 		const data = reason.response ? reason.response.data : reason.message;
 		throw error(400, data);
