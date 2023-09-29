@@ -86,7 +86,7 @@ type SeriesAccumulator = {
 
 type Studies = Study[];
 
-export const POST = async ({ request, fetch }) => {
+export const POST = async ({ request, fetch, url }) => {
 	const data = await request.json();
 
 	const { path, token, folderForJSON, type, file } = data;
@@ -149,10 +149,10 @@ export const POST = async ({ request, fetch }) => {
 
 				const merged = await setupReader(blob);
 
-				const url = `dicomweb:${env.PUBLIC_RESOURCES_URL}api/files/ohif/${fname}`;
+				const fileUrl = `dicomweb:${url.origin}/api/files/ohif/${fname}`;
 
 				payload['instances'].push({
-					url: url,
+					url: fileUrl,
 					metadata: merged
 				});
 			} catch (errorMessage) {
@@ -218,7 +218,7 @@ export const POST = async ({ request, fetch }) => {
 		});
 		return response;
 	} catch (errorMessage) {
-		throw error(404, {
+		throw error(500, {
 			message: errorMessage as string
 		});
 	}

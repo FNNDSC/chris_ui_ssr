@@ -50,6 +50,8 @@
 	$: currentPath = pathname.substring(5);
 	$: ({ folders, files } = data);
 
+	
+
 	onMount(async () => {
 		if (browser) {
 			const module = (await import('$lib/components/library/Carousel.svelte')).default;
@@ -127,13 +129,13 @@
 
 			case 'OHIF': {
 				const folderForJSON = getFolderForJSON(file.fname);
-				const newWindow = window.open(`${env.PUBLIC_DUMMY_URL}`, '_blank');
+				const newWindow = window.open(`${$page.url.origin}/ohif`, '_blank');
 
 				const response = await handleOhif(file.fname, folderForJSON, data.token, 'file', file);
 
 				if (response.status === 200) {
 					if (newWindow)
-						newWindow.location = `${env.PUBLIC_OHIF_URL}viewer/dicomjson?url=${env.PUBLIC_RESOURCES_URL}api/jsonfile/${folderForJSON}.json`;
+						newWindow.location = `${env.PUBLIC_OHIF_URL}viewer/dicomjson?url=${$page.url.origin}/api/jsonfile/${folderForJSON}.json`;
 				}
 			}
 
@@ -170,7 +172,7 @@
 			}
 
 			case 'OHIF': {
-				const newWindow = window.open(`${env.PUBLIC_DUMMY_URL}`, '_blank');
+				const newWindow = window.open(`${$page.url.origin}/ohif`, '_blank');
 
 				const response = await handleOhif(
 					`${folder.path}/${folder.name}`,
@@ -181,7 +183,7 @@
 
 				if (response.status === 200) {
 					if (newWindow)
-						newWindow.location = `${env.PUBLIC_OHIF_URL}viewer/dicomjson?url=${env.PUBLIC_RESOURCES_URL}api/jsonfile/${folder.name}.json`;
+						newWindow.location = `${env.PUBLIC_OHIF_URL}viewer/dicomjson?url=${$page.url.origin}/api/jsonfile/${folder.name}.json`;
 				}
 			}
 		}

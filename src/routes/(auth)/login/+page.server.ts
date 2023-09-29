@@ -34,7 +34,7 @@ const login: Action = async ({ cookies, request }: any) => {
 		const getAuthToken = Client.getAuthToken;
 		const token = await getAuthToken(authURL, form.data.username, form.data.password);
 
-		console.log("Token", token);
+		
 
 		cookies.set('session', token, {
 			path: '/',
@@ -45,7 +45,7 @@ const login: Action = async ({ cookies, request }: any) => {
 		});
 		
 	} catch (reason: any) {
-		console.log('Reason', reason);
+		
 		const data = reason.response ? reason.response.data : reason.message;
 		throw error(400, data);
 	}
