@@ -24,7 +24,7 @@
 	import { uploadStore } from '$lib/stores/uploadStore';
 	import type { PageData } from './$types';
 	import type { PreviewPayload } from '$lib/types/Library';
-	import { PUBLIC_DUMMY_URL, PUBLIC_OHIF_URL, PUBLIC_RESOURCES_URL } from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 	import type { FolderType, FileType } from '$lib/types/Data';
 
 	export let data: PageData;
@@ -49,6 +49,8 @@
 	$: pathname = $page.url.pathname;
 	$: currentPath = pathname.substring(5);
 	$: ({ folders, files } = data);
+
+	
 
 	onMount(async () => {
 		if (browser) {
@@ -127,13 +129,13 @@
 
 			case 'OHIF': {
 				const folderForJSON = getFolderForJSON(file.fname);
-				const newWindow = window.open(`${PUBLIC_DUMMY_URL}`, '_blank');
+				const newWindow = window.open(`${$page.url.origin}/ohif`, '_blank');
 
 				const response = await handleOhif(file.fname, folderForJSON, data.token, 'file', file);
 
 				if (response.status === 200) {
 					if (newWindow)
-						newWindow.location = `${PUBLIC_OHIF_URL}viewer/dicomjson?url=${PUBLIC_RESOURCES_URL}api/jsonfile/${folderForJSON}.json`;
+						newWindow.location = `${env.PUBLIC_OHIF_URL}viewer/dicomjson?url=${$page.url.origin}/api/jsonfile/${folderForJSON}.json`;
 				}
 			}
 
@@ -170,7 +172,7 @@
 			}
 
 			case 'OHIF': {
-				const newWindow = window.open(`${PUBLIC_DUMMY_URL}`, '_blank');
+				const newWindow = window.open(`${$page.url.origin}/ohif`, '_blank');
 
 				const response = await handleOhif(
 					`${folder.path}/${folder.name}`,
@@ -181,7 +183,7 @@
 
 				if (response.status === 200) {
 					if (newWindow)
-						newWindow.location = `${PUBLIC_OHIF_URL}viewer/dicomjson?url=${PUBLIC_RESOURCES_URL}api/jsonfile/${folder.name}.json`;
+						newWindow.location = `${env.PUBLIC_OHIF_URL}viewer/dicomjson?url=${$page.url.origin}/api/jsonfile/${folder.name}.json`;
 				}
 			}
 		}
@@ -217,7 +219,7 @@
 {#if open}
 	<Dialog bind:open closeOnEscape={false} closeOnOutsideClick={false}>
 		<DialogContent class="h-full sm:max-w-full">
-			{#if browser}
+			{#if browser && Carousel}
 				<svelte:component
 					this={Carousel}
 					{files}

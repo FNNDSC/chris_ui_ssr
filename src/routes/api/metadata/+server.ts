@@ -1,17 +1,21 @@
 import { error } from '@sveltejs/kit';
-import * as dicomParser from 'dicom-parser';
+import module from 'dicom-parser';
 import type Client from '@fnndsc/chrisapi';
 import { fetchClient } from '$lib/client.js';
 import { getFileName } from '$lib/utilities/library/index.js';
 import type { FileType } from '$lib/types/Data/index.js';
-import { PUBLIC_API_URL, PUBLIC_RESOURCES_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 async function setupReader(blob: Blob) {
-	const buffer = Buffer.from(await blob.arrayBuffer());
-	const bufferArray = new Uint8Array(buffer);
-	const dataSet = dicomParser.parseDicom(bufferArray);
-	const dictionary = createDataSet(dataSet);
-	return dictionary;
+	try {
+		const buffer = Buffer.from(await blob.arrayBuffer());
+		const bufferArray = new Uint8Array(buffer);
+		const dataSet = module.parseDicom(bufferArray);
+		const dictionary = createDataSet(dataSet);
+		return dictionary;
+	} catch (error) {
+		console.log('Error', error);
+	}
 }
 
 async function getFileForPath(path: string, client: Client) {
@@ -82,7 +86,7 @@ type SeriesAccumulator = {
 
 type Studies = Study[];
 
-export const POST = async ({ request, fetch }) => {
+export const POST = async ({ request, fetch, url }) => {
 	const data = await request.json();
 
 	const { path, token, folderForJSON, type, file } = data;
@@ -117,7 +121,7 @@ export const POST = async ({ request, fetch }) => {
 
 				const { id, fname } = fileList.data[0];
 				const fileName = getFileName(fname);
-				const urlToFetch = `${PUBLIC_API_URL}uploadedfiles/${id}/${fileName}`;
+				const urlToFetch = `${env.PUBLIC_API_URL}uploadedfiles/${id}/${fileName}`;
 
 				const responseBlob = await fetch(urlToFetch, {
 					method: 'GET',
@@ -145,15 +149,15 @@ export const POST = async ({ request, fetch }) => {
 
 				const merged = await setupReader(blob);
 
-				const url = `dicomweb:${PUBLIC_RESOURCES_URL}api/files/ohif/${fname}`;
+				const fileUrl = `dicomweb:${url.origin}/api/files/ohif/${fname}`;
 
 				payload['instances'].push({
-					url: url,
+					url: fileUrl,
 					metadata: merged
 				});
 			} catch (errorMessage) {
 				throw error(500, {
-					message: 'Internal Server Error'
+					message: errorMessage as string
 				});
 			}
 		}
@@ -178,7 +182,7 @@ export const POST = async ({ request, fetch }) => {
 			seriesAcc[seriesID] = seriesEntry;
 		} catch (errorMessage) {
 			throw error(500, {
-				message: 'Internal Server Error'
+				message: errorMessage as string
 			});
 		}
 	}
@@ -214,7 +218,7 @@ export const POST = async ({ request, fetch }) => {
 		});
 		return response;
 	} catch (errorMessage) {
-		throw error(404, {
+		throw error(500, {
 			message: errorMessage as string
 		});
 	}

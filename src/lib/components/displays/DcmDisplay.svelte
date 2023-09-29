@@ -1,43 +1,42 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
-  import { browser } from "$app/environment";
+	import { onDestroy, onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
-  export let blob: Blob;
+	export let blob: Blob;
 
-  let cornerstone: any;
-  let currentIndex: number;
+	let cornerstone: any = null;
+	let currentIndex: number;
 
-  function setCurrentIndex(index: number) {
-    currentIndex = index;
-  }
+	function setCurrentIndex(index: number) {
+		currentIndex = index;
+	}
 
-  async function setDicom(blob: Blob) {
-    if (browser) {
-      const module = await import("$lib/utilities/cornerstone");
-      const { loadDicomImage, enableElement } = module;
+	onMount(async () => {
+		if (browser) {
+			try {
+				const module = await import('$lib/utilities/cornerstone');
+				if (module && cornerstone !== null) {
+					const { loadDicomImage, enableElement, initDemo } = module;
+					await initDemo();
+					const imageId = loadDicomImage(blob);
+					enableElement(cornerstone, [imageId], setCurrentIndex);
+				}
+			} catch (error: any) {
+				console.log('Error', error);
+			}
+		}
+	});
 
-      const imageId = loadDicomImage(blob);
-      enableElement(cornerstone, [imageId], setCurrentIndex);
-    }
-  }
+	onDestroy(async () => {
+		if (browser) {
+			const module = await import('$lib/utilities/cornerstone');
+			if (module) {
+				module.cleanUpTooling();
+			}
+		}
+	});
 
-  onMount(async () => {
-    if (browser) {
-      const module = await import("$lib/utilities/cornerstone");
-      const { initDemo } = module;
-      await initDemo();
-      setDicom(blob);
-    }
-  });
-
-  onDestroy(async () => {
-    if (browser) {
-      const module = await import("$lib/utilities/cornerstone");
-      module.cleanUpTooling();
-    }
-  });
-
-  $: setDicom(blob);
+	//	$: setDicom(blob);
 </script>
 
 <div bind:this={cornerstone} id="container" />

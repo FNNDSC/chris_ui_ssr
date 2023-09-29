@@ -22,6 +22,7 @@ export function download(blob: Blob, name: string) {
 async function clientSetup(token: string) {
 	const client = fetchClient(token);
 	await client.setUrls();
+
 	return client;
 }
 
@@ -337,20 +338,20 @@ export async function handleUpload(
 }
 
 export async function createNewFolder(newFolder: string, currentPath: string, token: string) {
-	const client = await clientSetup(token);
-
-	if (!newFolder) {
-		newFolder = 'Untitled';
-	}
-
-	const content = 'Welcome';
-	const file = new Blob([content], { type: 'text/plain' });
-	const path = `${currentPath}/${newFolder}`;
-	const formData = new FormData();
-	formData.append('upload_path', `${path}/Welcome.txt`);
-	formData.append('fname', file, 'Welcome.txt');
-
 	try {
+		const client = await clientSetup(token);
+
+		if (!newFolder) {
+			newFolder = 'Untitled';
+		}
+
+		const content = 'Welcome';
+		const file = new Blob([content], { type: 'text/plain' });
+		const path = `${currentPath}/${newFolder}`;
+		const formData = new FormData();
+		formData.append('upload_path', `${path}/Welcome.txt`);
+		formData.append('fname', file, 'Welcome.txt');
+
 		const config = {
 			headers: { Authorization: 'Token ' + token }
 		};

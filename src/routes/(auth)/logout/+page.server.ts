@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
+import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ cookies }) => {
 	// we only use this endpoint for the api
