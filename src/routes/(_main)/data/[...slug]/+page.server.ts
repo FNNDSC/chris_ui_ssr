@@ -3,6 +3,7 @@ import { fetchClient } from '$lib/client';
 import type { FileType } from '$lib/types/Data/index.js';
 
 export const load = async ({ locals, cookies, params, depends }) => {
+	depends('app:reload');
 	if (!locals.user) {
 		throw redirect(302, '/login');
 	}
@@ -29,8 +30,6 @@ export const load = async ({ locals, cookies, params, depends }) => {
 	const uploads = await client.getFileBrowserPaths({
 		path: params.slug
 	});
-
-	depends('app:reload');
 
 	const pathList = await client.getFileBrowserPath(params.slug);
 
