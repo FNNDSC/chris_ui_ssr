@@ -205,7 +205,7 @@
 				Start using our app today.
 			</h2>
 			<p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-300">
-				ChRIS guides you through the steps to containerize your complex analytics. Apps for AI and
+				ChRIS guides you through the steps to containerize your complex analytics apps, apps for AI and
 				Deep Learning, apps for reporting and image processing... even plain old workhorse apps that
 				convert data from one format to another. It's all here.
 			</p>
