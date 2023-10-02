@@ -282,59 +282,64 @@ export async function handleUpload(
 	uploadStore.setNewNotification();
 
 	let count = 0;
-	items.map(async (file) => {
-		const formData = new FormData();
-		const name = isFolder ? file.webkitRelativePath : file.name;
-		formData.append('upload_path', `${currentPath}/${name}`);
-		formData.append('fname', file, file.name);
-		const controller = new AbortController();
+	const filePromises = Promise.allSettled(
+		items.map(async (file) => {
+			const formData = new FormData();
+			const name = isFolder ? file.webkitRelativePath : file.name;
+			formData.append('upload_path', `${currentPath}/${name}`);
+			formData.append('fname', file, file.name);
+			const controller = new AbortController();
 
-		try {
-			const config = {
-				headers: { Authorization: 'Token ' + token },
-				signal: controller.signal,
-				onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-					if (progressEvent && progressEvent.progress) {
-						const progress = Math.round(progressEvent.progress * 100);
+			try {
+				const config = {
+					headers: { Authorization: 'Token ' + token },
+					signal: controller.signal,
+					onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+						if (progressEvent && progressEvent.progress) {
+							const progress = Math.round(progressEvent.progress * 100);
 
-						if (!isFolder) {
-							uploadStore.setStatusForFiles('Uploading', file.name, progress, controller);
+							if (!isFolder) {
+								uploadStore.setStatusForFiles('Uploading', file.name, progress, controller);
 
-							if (progress === 100) {
-								uploadStore.setStatusForFiles('Upload Complete', file.name, progress, controller);
-							}
-						} else {
-							if (progress === 100) {
-								count++;
-								const fileName = files[0].webkitRelativePath.split('/')[0];
-								uploadStore.setStatusForFolders(
-									'Uploading',
-									fileName,
-									count,
-									files.length,
-									controller
-								);
-
-								if (count === files.length) {
+								if (progress === 100) {
+									uploadStore.setStatusForFiles('Upload Complete', file.name, progress, controller);
+								}
+							} else {
+								if (progress === 100) {
+									count++;
+									const fileName = files[0].webkitRelativePath.split('/')[0];
 									uploadStore.setStatusForFolders(
-										'Upload Complete',
+										'Uploading',
 										fileName,
 										count,
 										files.length,
 										controller
 									);
+
+									if (count === files.length) {
+										uploadStore.setStatusForFolders(
+											'Upload Complete',
+											fileName,
+											count,
+											files.length,
+											controller
+										);
+									}
 								}
 							}
 						}
 					}
-				}
-			};
-			await axios.post(url, formData, config);
-		} catch (error: any) {
-			uploadStore.setStatusForFiles('Upload Failed', file.name, 0, controller);
-		}
-	});
-	invalidate('app:reload');
+				};
+				await axios.post(url, formData, config);
+			} catch (error: any) {
+				uploadStore.setStatusForFiles('Upload Failed', file.name, 0, controller);
+			}
+		})
+	);
+
+	if ((await filePromises).length === items.length) {
+		invalidate('app:reload');
+	}
 }
 
 export async function createNewFolder(newFolder: string, currentPath: string, token: string) {
