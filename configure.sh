@@ -4,8 +4,8 @@
 read -p "Enter APP_IP (default: your local IP): " APP_IP
 APP_IP=${APP_IP:-$(hostname -I | cut -d' ' -f1)}
 
-read -p "Enter APP_PORT (default: 3000): " APP_PORT
-APP_PORT=${APP_PORT:-3000}
+read -p "Enter APP_PORT (default: 3001): " APP_PORT
+APP_PORT=${APP_PORT:-3001}
 
 read -p "Enter CUBE_IP (default: your local IP): " CUBE_IP
 CUBE_IP=${CUBE_IP:-$(hostname -I | cut -d' ' -f1)}
@@ -16,9 +16,8 @@ CUBE_PORT=${CUBE_PORT:-8000}
 read -p "Enter OHIF_IP (default: your local IP): " OHIF_IP
 OHIF_IP=${OHIF_IP:-$(hostname -I | cut -d' ' -f1)}
 
-read -p "Enter OHIF_PORT (default: 3002): " OHIF_PORT
-OHIF_PORT=${OHIF_PORT:-3002}
-
+read -p "Enter OHIF_PORT (default: 3000): " OHIF_PORT
+OHIF_PORT=${OHIF_PORT:-3000}
 
 
 # Build the Docker image

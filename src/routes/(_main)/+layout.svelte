@@ -21,15 +21,7 @@
 
 <div>
 	<Transition show={$dialog.expanded}>
-		<div
-			class="relative z-50 xl:hidden"
-			role="dialog"
-			aria-modal="true"
-			on:click={dialog.close}
-			on:keydown={(e) => {
-				e.key === 'Escape' && dialog.close;
-			}}
-		>
+		<div class="relative z-50 xl:hidden" role="dialog" aria-modal="true">
 			<Transition
 				enter="transition-opacity ease-linear duration-300"
 				enterFrom="opacity-0"
@@ -208,7 +200,7 @@
 								>
 									<span
 										class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white"
-										>U</span
+										>D</span
 									>
 									<span class="truncate">Data</span>
 								</a>
