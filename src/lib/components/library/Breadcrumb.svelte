@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Home from "./Home.svelte";
-  import Path from "./Path.svelte";
-
-  
+  import Home from "./HomeIcon.svelte";
+  import Path from "./PathIcon.svelte";
+ 
   export let currentPath: string;
   export let currentUrl: string;
+
   $: navigation = currentPath.split("/");
 
   function getCurrentLink(link: string) {

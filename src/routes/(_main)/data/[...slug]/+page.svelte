@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
-	import { Folder, File, X, Download, Trash } from 'lucide-svelte';
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import { env } from '$env/dynamic/public';
+	import { Folder, File, X, Download, Trash } from 'lucide-svelte';
+
 	import { LibraryCard, NewFolder, Breadcrumb, Input } from '$lib/components/library/';
 	import { Button } from '$lib/components/ui/button';
 	import { Dialog, DialogContent } from '$lib/components/ui/dialog';
@@ -24,7 +26,6 @@
 	import { uploadStore } from '$lib/stores/uploadStore';
 	import type { PageData } from './$types';
 	import type { PreviewPayload } from '$lib/types/Library';
-	import { env } from '$env/dynamic/public';
 	import type { FolderType, FileType } from '$lib/types/Data';
 
 	export let data: PageData;
@@ -39,6 +40,7 @@
 
 	let fileInput: any;
 	let folderInput: any;
+	let downloadInput: any;
 	let newFolder: string;
 	let multipleSelected: {
 		path: string;
@@ -49,8 +51,6 @@
 	$: pathname = $page.url.pathname;
 	$: currentPath = pathname.substring(5);
 	$: ({ folders, files } = data);
-
-	
 
 	onMount(async () => {
 		if (browser) {
@@ -137,10 +137,11 @@
 					if (newWindow)
 						newWindow.location = `${env.PUBLIC_OHIF_URL}viewer/dicomjson?url=${$page.url.origin}/api/jsonfile/${folderForJSON}.json`;
 				}
+				break;
 			}
 
 			default:
-				return;
+				break;
 		}
 	}
 
@@ -185,7 +186,10 @@
 					if (newWindow)
 						newWindow.location = `${env.PUBLIC_OHIF_URL}viewer/dicomjson?url=${$page.url.origin}/api/jsonfile/${folder.name}.json`;
 				}
+				break;
 			}
+			default:
+				break;
 		}
 	}
 

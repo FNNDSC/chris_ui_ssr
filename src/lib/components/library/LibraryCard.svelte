@@ -1,9 +1,8 @@
 <script lang="ts">
-	import Transition from 'svelte-transition';
-	import { createMenu } from 'svelte-headlessui';
 	import { goto } from '$app/navigation';
+	import { Ellipse } from '$lib/components/library';
 	import { Card } from '$lib/components/ui/card';
-	import Ellipse from './Ellipse.svelte';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 
 	export let data: {
 		active: boolean;
@@ -21,10 +20,6 @@
 
 	$: ({ active, path, type, multipleSelected } = data);
 	$: selected = multipleSelected.find((selected) => selected.path === path);
-
-	const menu = createMenu({
-		label: 'Actions'
-	});
 
 	function handleClicks(e: MouseEvent) {
 		e.preventDefault();
@@ -74,51 +69,31 @@
 		</a>
 	</div>
 	<div class="relative ml-auto">
-		<button
-			use:menu.button
-			type="button"
-			class="-m-2.5 block p-2.5 text-gray-400 hover:text-gray-500"
-			id="options-menu-0-button"
-			aria-expanded="false"
-			aria-haspopup="true"
-		>
-			<span class="sr-only">Open options</span>
-			<Ellipse />
-		</button>
-
-		<Transition
-			show={$menu.expanded}
-			enter="transition ease-out duration-100"
-			enterFrom="transform opacity-0 scale-95"
-			enterTo="transform opacity-100 scale-100"
-			leave="transition ease-in duration-75"
-			leaveFrom="transform opacity-100 scale-100"
-			leaveTo="transform opacity-0 scale-95"
-		>
-			<div
-				use:menu.items
-				class="absolute right-0 z-10 ml-4 mt-0.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none"
-				role="menu"
-				aria-orientation="vertical"
-				aria-labelledby="options-menu-0-button"
-				tabindex="-1"
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger
+				class="-m-2.5 block p-2.5 text-gray-400 hover:text-gray-500"
+				id="options-menu-0-button"
+				aria-expanded="false"
+				aria-haspopup="true"
 			>
-				{#each actions as action (action)}
-					<div use:menu.item>
-						<button
-							on:click|stopPropagation={() => {
+				<span class="sr-only">Open options</span>
+				<Ellipse />
+			</DropdownMenu.Trigger>
+
+			<DropdownMenu.Content>
+				<DropdownMenu.Group>
+					{#each actions as action (action)}
+						<DropdownMenu.Item
+							on:click={() => {
 								handleAction(action);
-								menu.close();
 							}}
-							use:menu.item
-							class="bg-gray-100 block px-3 py-1 text-sm leading-6 text-gray-900"
-							role="menuitem"
-							tabindex="-1"
-							id="options-menu-0-item-0">{action}</button
 						>
-					</div>
-				{/each}
-			</div>
-		</Transition>
+							{action}
+						</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+					{/each}
+				</DropdownMenu.Group>
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
 	</div></Card
 >

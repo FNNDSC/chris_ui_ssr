@@ -34,8 +34,6 @@ const login: Action = async ({ cookies, request }: any) => {
 		const getAuthToken = Client.getAuthToken;
 		const token = await getAuthToken(authURL, form.data.username, form.data.password);
 
-		
-
 		cookies.set('session', token, {
 			path: '/',
 			httpOnly: true,

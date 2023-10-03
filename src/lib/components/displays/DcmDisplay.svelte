@@ -35,8 +35,6 @@
 			}
 		}
 	});
-
-	//	$: setDicom(blob);
 </script>
 
 <div bind:this={cornerstone} id="container" />
