@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { PreviewPayload } from '$lib/types/Library';
 	import { DcmDisplay, ImageDisplay, IFrameDisplay} from '$components/displays';
 	import { Button } from '$lib/components/ui/button';
 	import { fetchFile, getFileExtension, fileViewerMap } from '$lib/utilities/library';
-
 	import type { FileType } from '$lib/types/Data';
+	import type { PreviewPayload } from '$lib/types/Library';
 
 	export let token: string;
 	export let previewPayload: PreviewPayload;

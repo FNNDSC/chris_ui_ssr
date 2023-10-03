@@ -1,2 +1,10 @@
+# dev container stuff that might end up here bc of the dev environment
 node_modules
+.config/
+.svelte-kit/
+ohif/
+.npm/
+.cache/
+.yarnrc
 .env
+npm-debug.log*

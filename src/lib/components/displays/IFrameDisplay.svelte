@@ -10,6 +10,7 @@
       type: "text/html",
     };
   }
+  
   if (fileType === "pdf") {
     fileObj = {
       type: "application/pdf",
