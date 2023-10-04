@@ -40,7 +40,6 @@
 
 	let fileInput: any;
 	let folderInput: any;
-	let downloadInput: any;
 	let newFolder: string;
 	let multipleSelected: {
 		path: string;

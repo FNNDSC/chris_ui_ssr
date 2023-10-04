@@ -54,7 +54,6 @@ export const POST = async ({ request, url }) => {
 			}
 		});
 	} catch (errorMessage) {
-		console.log
 		throw error(404, {
 			message: errorMessage as string
 		});

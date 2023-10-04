@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { createDialog, createMenu } from 'svelte-headlessui';
 	import { Transition } from 'svelte-transition';
+	import { navigating } from '$app/stores';
 	import Notification from '$lib/components/notification/Notification.svelte';
+	import { Loading } from '$components/common';
 	import { uploadStore } from '$lib/stores/uploadStore';
 	import { downloadStore } from '$lib/stores/downloadStore';
 	import { getActiveStatus } from '$lib/utilities/library';
@@ -340,7 +342,12 @@
 		</div>
 
 		<main>
-			<slot />
+			{#if $navigating}
+				<Loading />
+			{:else}
+				<slot />
+			{/if}
+
 			{#if $uploadStore.isOpen || $downloadStore.isOpen}
 				<Notification />
 			{/if}
