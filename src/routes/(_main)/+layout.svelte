@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { createDialog, createMenu } from 'svelte-headlessui';
+
 	import { Transition } from 'svelte-transition';
-	import { navigating } from '$app/stores';
+	import { navigating, page } from '$app/stores';
 	import Notification from '$lib/components/notification/Notification.svelte';
 	import { Loading } from '$components/common';
 	import { uploadStore } from '$lib/stores/uploadStore';
 	import { downloadStore } from '$lib/stores/downloadStore';
 	import { getActiveStatus } from '$lib/utilities/library';
+	import NavItemDesktop from '$components/common/NavItemDesktop.svelte';
 
 	export let data;
 
@@ -19,6 +21,8 @@
 	const menu = createMenu({ label: 'Actions' });
 
 	$: currentStatus = getActiveStatus($downloadStore, $uploadStore);
+
+	$: console.log($page);
 </script>
 
 <div>
@@ -81,47 +85,49 @@
 								<ul class="flex flex-1 flex-col gap-y-7">
 									<li>
 										<ul class="-mx-2 space-y-1">
-											<li>
-												<!-- Current: "bg-gray-800 text-white", Default: "text-gray-400 hover:text-white hover:bg-gray-800" -->
-												<a
-													href="/"
-													class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-												>
-													<svg
-														class="h-6 w-6 shrink-0"
-														fill="none"
-														viewBox="0 0 24 24"
-														stroke-width="1.5"
-														stroke="currentColor"
-														aria-hidden="true"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
-														/>
-													</svg>
-													Dashboard
-												</a>
-											</li>
+											<NavItemDesktop
+												href="/"
+												icon="H"
+												nav="Home"
+												isActive={$page.url.pathname === '/'}
+											/>
 										</ul>
 									</li>
 									<li>
-										<div class="text-xs font-semibold leading-6 text-gray-400">Your Data</div>
+										<div class="text-sm font-semibold leading-6 text-gray-400">Your Data</div>
 										<ul class="-mx-2 mt-2 space-y-1">
-											<li>
-												<!-- Current: "bg-gray-800 text-white", Default: "text-gray-400 hover:text-white hover:bg-gray-800" -->
-												<a
-													href="/data"
-													class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-												>
-													<span
-														class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white"
-														>D</span
-													>
-													<span class="truncate">Data</span>
-												</a>
-											</li>
+											<NavItemDesktop
+												href="/data"
+												isActive={$page.url.pathname.includes('/data')}
+												icon="D"
+												nav="Data"
+											/>
+										</ul>
+									</li>
+									<li>
+										<div
+											class="text-sm font-semibold leading-6 text-gray-400
+										{$page.url.pathname.includes('/query/chrispacs') || $page.url.pathname.includes('/query/bchpacs')
+												? 'text-white'
+												: ''}
+										"
+										>
+											PACS Query
+										</div>
+										<ul class="-mx-2 mt-2 space-y-1">
+											<NavItemDesktop
+												isActive={$page.url.pathname.includes('/query/chrispacs')}
+												href="/query/chrispacs"
+												nav="ChRIS PACS"
+												icon="C"
+											/>
+
+											<NavItemDesktop
+												isActive={$page.url.pathname.includes('/query/bchpacs')}
+												nav="BCH PACS"
+												href="/query/bchpacs"
+												icon="B"
+											/>
 										</ul>
 									</li>
 									<li class="-mx-6 mt-auto">
@@ -166,47 +172,50 @@
 				<ul class="flex flex-1 flex-col gap-y-7">
 					<li>
 						<ul class="-mx-2 space-y-1">
-							<li>
-								<!-- Current: "bg-gray-800 text-white", Default: "text-gray-400 hover:text-white hover:bg-gray-800" -->
-								<a
-									href="/"
-									class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-								>
-									<svg
-										class="h-6 w-6 shrink-0"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke-width="1.5"
-										stroke="currentColor"
-										aria-hidden="true"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
-										/>
-									</svg>
-									Dashboard
-								</a>
-							</li>
+							<NavItemDesktop href="/" icon="H" nav="Home" isActive={$page.url.pathname === '/'} />
 						</ul>
 					</li>
 					<li>
-						<div class="text-xs font-semibold leading-6 text-gray-400">Your Data</div>
+						<div
+							class="text-sm font-semibold leading-6 text-gray-400
+						{$page.url.pathname.includes('/data') && 'text-white'}"
+						>
+							Your Data
+						</div>
 						<ul class="-mx-2 mt-2 space-y-1">
-							<li>
-								<!-- Current: "bg-gray-800 text-white", Default: "text-gray-400 hover:text-white hover:bg-gray-800" -->
-								<a
-									href="/data"
-									class="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-								>
-									<span
-										class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white"
-										>D</span
-									>
-									<span class="truncate">Data</span>
-								</a>
-							</li>
+							<NavItemDesktop
+								href="/data"
+								isActive={$page.url.pathname.includes('/data')}
+								icon="D"
+								nav="Data"
+							/>
+						</ul>
+					</li>
+
+					<li>
+						<div
+							class="text-sm font-semibold leading-6 text-gray-400
+						{$page.url.pathname.includes('/query/chrispacs') || $page.url.pathname.includes('/query/bchpacs')
+								? 'text-white'
+								: ''}
+						"
+						>
+							PACS Query
+						</div>
+						<ul class="-mx-2 mt-2 space-y-1">
+							<NavItemDesktop
+								isActive={$page.url.pathname.includes('/query/chrispacs')}
+								href="/query/chrispacs"
+								nav="ChRIS PACS"
+								icon="C"
+							/>
+
+							<NavItemDesktop
+								isActive={$page.url.pathname.includes('/query/bchpacs')}
+								nav="BCH PACS"
+								href="/query/bchpacs"
+								icon="B"
+							/>
 						</ul>
 					</li>
 				</ul>
@@ -214,7 +223,7 @@
 		</div>
 	</div>
 
-	<div class="xl:pl-72">
+	<div class="xl:pl-72 w-full h-full">
 		<!-- Sticky search header -->
 		<div
 			class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-white/5 bg-gray-900 px-4 shadow-sm sm:px-6 lg:px-8"
@@ -341,7 +350,7 @@
 			</div>
 		</div>
 
-		<main>
+		<main class="h-full w-full">
 			{#if $navigating}
 				<Loading />
 			{:else}
