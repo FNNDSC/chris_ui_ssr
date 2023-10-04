@@ -7,15 +7,11 @@ import type { FileType } from '$lib/types/Data/index.js';
 import { env } from '$env/dynamic/public';
 
 async function setupReader(blob: Blob) {
-	try {
-		const buffer = Buffer.from(await blob.arrayBuffer());
-		const bufferArray = new Uint8Array(buffer);
-		const dataSet = module.parseDicom(bufferArray);
-		const dictionary = createDataSet(dataSet);
-		return dictionary;
-	} catch (error) {
-		console.log('Error', error);
-	}
+	const buffer = Buffer.from(await blob.arrayBuffer());
+	const bufferArray = new Uint8Array(buffer);
+	const dataSet = module.parseDicom(bufferArray);
+	const dictionary = createDataSet(dataSet);
+	return dictionary;
 }
 
 async function getFileForPath(path: string, client: Client) {
@@ -224,7 +220,7 @@ export const POST = async ({ request, fetch, url }) => {
 	}
 };
 
-function createDataSet(dataSet: dicomParser.DataSet) {
+function createDataSet(dataSet: module.DataSet) {
 	// Define a mapping of DICOM element tags to headers and their types
 	const dicomTagToHeader: DicomTagMap = {
 		x00080020: 'StudyDate',
