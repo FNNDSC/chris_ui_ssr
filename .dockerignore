@@ -6,5 +6,12 @@ ohif/
 .npm/
 .cache/
 .yarnrc
-.env
 npm-debug.log*
+
+/.git
+/README.md
+/.dockerignore
+/Dockerfile
+
+/.env
+/.env.*
