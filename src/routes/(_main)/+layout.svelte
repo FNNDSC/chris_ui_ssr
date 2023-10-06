@@ -21,8 +21,6 @@
 	const menu = createMenu({ label: 'Actions' });
 
 	$: currentStatus = getActiveStatus($downloadStore, $uploadStore);
-
-	$: console.log($page);
 </script>
 
 <div>

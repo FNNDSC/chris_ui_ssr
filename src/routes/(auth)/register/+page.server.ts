@@ -1,4 +1,4 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { superValidate, setError } from 'sveltekit-superforms/server';
 import { env } from '$env/dynamic/public';
 import type { Action, Actions, PageServerLoad } from './$types';
@@ -15,17 +15,20 @@ export const load: PageServerLoad = async ({ locals, request }) => {
 	return { form };
 };
 
-const login: Action = async ({ cookies, request }: any) => {
+const register: Action = async ({ cookies, request }: any) => {
 	const form = await superValidate(request, schema);
 
 	if (!form.valid) {
 		return fail(400, { form });
 	}
 
+	const userURL = env.PUBLIC_USERS_URL;
 	const authURL = env.PUBLIC_AUTH_URL;
 
 	try {
 		const Client = getClientByEnvironment();
+		await Client.createUser(userURL, form.data.username, form.data.password, form.data.email);
+
 		const getAuthToken = Client.getAuthToken;
 		const token = await getAuthToken(authURL, form.data.username, form.data.password);
 
@@ -38,11 +41,24 @@ const login: Action = async ({ cookies, request }: any) => {
 		});
 	} catch (reason: any) {
 		const data = reason.response ? reason.response.data : reason.message;
-		setError(form, 'message', data);
+
+		const usernameError = data.username && data.username[0];
+		const passwordError = data.password && data.password[0];
+		const emailError = data.email && data.email[0];
+		if (usernameError) {
+			setError(form, 'username', usernameError);
+		}
+		if (emailError) {
+			setError(form, 'email', emailError);
+		}
+		if (passwordError) {
+			setError(form, 'password', passwordError);
+		}
+
 		return { form };
 	}
 
 	return { form };
 };
 
-export const actions: Actions = { default: login };
+export const actions: Actions = { default: register };
