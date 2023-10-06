@@ -1,7 +1,7 @@
 import { fail, error, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { superValidate } from 'sveltekit-superforms/server';
-import { PUBLIC_AUTH_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import type { Action, Actions, PageServerLoad } from './$types';
 import { getClientByEnvironment } from '$lib/client';
 
@@ -27,7 +27,7 @@ const login: Action = async ({ cookies, request }: any) => {
 		return fail(400, { form });
 	}
 
-	const authURL = PUBLIC_AUTH_URL;
+	const authURL = env.PUBLIC_AUTH_URL;
 
 	try {
 		const Client = getClientByEnvironment();
