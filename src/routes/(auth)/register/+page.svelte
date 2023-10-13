@@ -6,8 +6,6 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { RegisterSchema } from './schema';
 
-	
-
 	let className: string | undefined | null = undefined;
 	export { className as class };
 	export let form: SuperValidated<RegisterSchema>;
@@ -18,9 +16,21 @@
 		goto('/login');
 	}}
 	class="absolute right-4 top-4 md:right-8 md:top-8"
+
 >
 	Login
 </button>
+
+<button
+	on:click={() => {
+		goto('/configure');
+	}}
+	class="absolute right-24 top-4 md:right-24 md:top-8"
+	
+>
+	Configure
+</button>
+
 <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
 	<div class="flex flex-col space-y-2 text-center">
 		<h1 class="text-2xl font-semibold tracking-tight">Register for an account</h1>

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { DcmDisplay, ImageDisplay, IFrameDisplay} from '$components/displays';
+	import { DcmDisplay, ImageDisplay, IFrameDisplay } from '$components/displays';
 	import { Button } from '$lib/components/ui/button';
-	import { fetchFile, getFileExtension, fileViewerMap } from '$lib/utilities/library';
+	import { getFileExtension, fileViewerMap } from '$lib/utilities/library';
 	import type { FileType } from '$lib/types/Data';
 	import type { PreviewPayload } from '$lib/types/Library';
 
@@ -28,6 +28,7 @@
 	let fileExtension: string;
 
 	async function fetchData(fname: string, token: string, type: string) {
+		/*
 		const fileData = await fetchFile(fname, token, type);
 		let fileBlob: Blob;
 		let fileExtension: string;
@@ -46,13 +47,16 @@
 			blob: fileBlob,
 			fileExtension
 		};
+		*/
 	}
 
 	async function setViewer(fname: string, type: string) {
+		/*
 		const data = await fetchData(fname, token, type);
 		ViewerType = fileViewerMap[data.fileExtension];
 		fileBlob = data.blob;
 		fileExtension = data.fileExtension;
+		*/
 	}
 
 	onMount(async () => {

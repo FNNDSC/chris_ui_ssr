@@ -3,15 +3,14 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { env } from '$env/dynamic/public';
-	import { Folder, File, X, Download, Trash } from 'lucide-svelte';
-
+	import { Folder, File, X, Download, Trash, LucideMonitor } from 'lucide-svelte';
 	import { LibraryCard, NewFolder, Breadcrumb, Input } from '$lib/components/library/';
 	import { Button } from '$lib/components/ui/button';
 	import { Dialog, DialogContent } from '$lib/components/ui/dialog';
 	import {
 		handleUpload,
-		handleFileDownload,
-		handleFolderDownload,
+		handleFileExport,
+		handleFolderExport,
 		handleFileDelete,
 		handleFolderDelete,
 		handleOhif,
@@ -27,6 +26,9 @@
 	import type { PageData } from './$types';
 	import type { PreviewPayload } from '$lib/types/Library';
 	import type { FolderType, FileType } from '$lib/types/Data';
+	import { fetchClient } from '$lib/client';
+	import { getLibraryResources } from '$lib/api/library';
+	import { afterNavigate } from '$app/navigation';
 
 	export let data: PageData;
 
@@ -46,6 +48,7 @@
 		type: string;
 	}[] = [];
 	let Carousel: any;
+	let next: string | null;
 
 	$: pathname = $page.url.pathname;
 	$: currentPath = pathname.substring(5);
@@ -98,23 +101,18 @@
 
 	async function dispatchFileActions(action: string, file: FileType, currentIndex?: number) {
 		switch (action) {
-			case 'Download': {
-				const value = window.prompt('Please enter a path on your local file system for download');
-
-				if (value) {
-					handleFileDownload(file, data.token, value);
-				}
-
+			case 'Export': {
+				handleFileExport(file);
 				break;
 			}
 
 			case 'Delete': {
-				handleFileDelete(file, data.token);
+				handleFileDelete(file, data.user.token, data.user.cubeurl);
 				break;
 			}
 
 			case 'Zip': {
-				handleZipDownloadFile(file, data.token);
+				handleZipDownloadFile(file, data.user.token);
 				break;
 			}
 
@@ -130,7 +128,7 @@
 				const folderForJSON = getFolderForJSON(file.fname);
 				const newWindow = window.open(`${$page.url.origin}/ohif`, '_blank');
 
-				const response = await handleOhif(file.fname, folderForJSON, data.token, 'file', file);
+				const response = await handleOhif(file.fname, folderForJSON, 'file', file);
 
 				if (response.status === 200) {
 					if (newWindow)
@@ -146,20 +144,17 @@
 
 	async function dispatchFolderActions(action: string, folder: FolderType, currentIndex?: number) {
 		switch (action) {
-			case 'Download': {
-				const value = window.prompt('Please enter a path on your local file system for download');
-				if (value) {
-					handleFolderDownload(folder, data.token, value);
-				}
+			case 'Export': {
+				handleFolderExport(folder);
 				break;
 			}
 			case 'Delete': {
-				handleFolderDelete(folder, data.token);
+				handleFolderDelete(folder, data.user.token, data.user.cubeurl);
 				break;
 			}
 
 			case 'Zip': {
-				handleZipFolderDownload(folder, data.token);
+				handleZipFolderDownload(folder, data.user.token, data.user.cubeurl);
 				break;
 			}
 
@@ -173,14 +168,7 @@
 
 			case 'OHIF': {
 				const newWindow = window.open(`${$page.url.origin}/ohif`, '_blank');
-
-				const response = await handleOhif(
-					`${folder.path}/${folder.name}`,
-					folder.name,
-					data.token,
-					'folder'
-				);
-
+				const response = await handleOhif(`${folder.path}/${folder.name}`, folder.name, 'folder');
 				if (response.status === 200) {
 					if (newWindow)
 						newWindow.location = `${env.PUBLIC_OHIF_URL}viewer/dicomjson?url=${$page.url.origin}/api/jsonfile/${folder.name}.json`;
@@ -196,7 +184,7 @@
 		const inputElement = event.target as HTMLInputElement;
 		const folder = inputElement.files;
 		if (folder) {
-			handleUpload(folder, true, currentPath, data.token);
+			handleUpload(folder, true, currentPath, data.user.token, data.user.cubeurl);
 		}
 	}
 
@@ -204,7 +192,7 @@
 		const inputElement = event.target as HTMLInputElement;
 		const files = inputElement.files;
 		if (files) {
-			handleUpload(files, false, currentPath, data.token);
+			handleUpload(files, false, currentPath, data.user.token, data.user.cubeurl);
 		}
 	}
 
@@ -213,10 +201,60 @@
 			newFolder = 'Untitled';
 		}
 
-		createNewFolder(newFolder, currentPath, data.token);
+		createNewFolder(newFolder, currentPath, data.user.token, data.user.cubeurl);
 		openDialog = !openDialog;
 		newFolder = '';
 	}
+
+	let viewport: HTMLDivElement;
+	let results: HTMLDivElement;
+	let item_width: number;
+	let item_height: number;
+	let num_columns: number;
+	let a = 0;
+	$: b = data.totalCount || 30;
+	let padding_top = 0;
+	let padding_bottom = 0;
+
+	function handleResize() {
+		const first = results.children[0] as HTMLDivElement;
+
+		if (first) {
+			item_width = first.offsetWidth;
+			item_height = first.offsetHeight;
+
+			num_columns = Number(getComputedStyle(results).getPropertyValue('--columns'));
+			handleScroll();
+		}
+	}
+
+	async function handleScroll() {
+		const { scrollHeight, scrollTop, clientHeight } = viewport;
+		const remaining = scrollHeight - (scrollTop + clientHeight);
+		if (remaining < 200) {
+			if (!data.nextPage) return;
+
+			const client = fetchClient(data.user.token, data.user.cubeurl);
+			const offset = data.offset + data.limit;
+			const response = await getLibraryResources(client, currentPath, offset);
+			data.folders = [...data.folders, ...response.folders];
+			data.files = [...data.files, ...response.files];
+			data.offset = response.offset;
+			data.nextPage = response.nextPage;
+		}
+
+		a = Math.floor(scrollTop / item_height) * num_columns;
+		b = Math.ceil((scrollTop + clientHeight) / item_height) * num_columns;
+
+		padding_top = Math.floor(a / num_columns) * item_height;
+		padding_bottom = Math.floor((data.totalCount - b) / num_columns) * item_height;
+	}
+
+	onMount(handleResize);
+
+	afterNavigate(() => {
+		viewport.scrollTo(0, 0);
+	});
 </script>
 
 {#if open}
@@ -227,7 +265,7 @@
 					this={Carousel}
 					{files}
 					{previewPayload}
-					token={data.token}
+					token={data.user.token}
 					{dispatchFileActions}
 				/>
 			{/if}
@@ -287,40 +325,89 @@
 
 <Breadcrumb currentUrl={pathname} {currentPath} />
 
-<div class="grid gap-4 sm:grid-cols-1 lg:grid-cols-5">
-	{#each folders as folder, index (folder.name)}
-		<LibraryCard
-			data={{
-				active: getCurrentlyActive(folder.name, $downloadStore, $uploadStore),
-				type: 'folder',
-				multipleSelected,
-				path: `${pathname}/${folder.name}`
-			}}
-			{handleMultipleSelect}
-			handleAction={(action) => dispatchFolderActions(action, folder, index)}
-		>
-			<Folder class="mr-2" slot="icon" />
-			<p slot="name" class="text-sm truncate font-medium text-white">
-				{folder.name}
-			</p>
-		</LibraryCard>
-	{/each}
+<svelte:window on:resize={handleResize} />
 
-	{#each files as file, index (file.fname)}
-		<LibraryCard
-			data={{
-				active: getCurrentlyActive(getFileName(file.fname), $downloadStore, $uploadStore),
-				type: 'file',
-				multipleSelected,
-				path: `${pathname}/${getFileName(file.fname)}`
-			}}
-			{handleMultipleSelect}
-			handleAction={(action) => dispatchFileActions(action, file, index)}
-		>
-			<File class="mr-2" slot="icon" />
-			<p slot="name" class="text-sm truncate font-medium text-white">
-				{getFileName(file.fname) || ''}
-			</p>
-		</LibraryCard>
-	{/each}
+<div bind:this={viewport} class="viewport" on:scroll={handleScroll}>
+	<div
+		bind:this={results}
+		style:padding_top="{padding_top}px"
+		style:padding_bottom="{padding_bottom}px"
+		class="results"
+	>
+		{#each folders.slice(a, b) as folder, index (folder.name)}
+			<LibraryCard
+				data={{
+					active: getCurrentlyActive(folder.name, $downloadStore, $uploadStore),
+					type: 'folder',
+					multipleSelected,
+					path: `${pathname}/${folder.name}`
+				}}
+				{handleMultipleSelect}
+				handleAction={(action) => dispatchFolderActions(action, folder, index)}
+			>
+				<Folder class="mr-2" slot="icon" />
+				<p slot="name" class="text-sm truncate font-medium text-white">
+					{folder.name}
+				</p>
+			</LibraryCard>
+		{/each}
+
+		{#each files.slice(a, b) as file, index (file.fname)}
+			<LibraryCard
+				data={{
+					active: getCurrentlyActive(getFileName(file.fname), $downloadStore, $uploadStore),
+					type: 'file',
+					multipleSelected,
+					path: `${pathname}/${getFileName(file.fname)}`
+				}}
+				{handleMultipleSelect}
+				handleAction={(action) => dispatchFileActions(action, file, index)}
+			>
+				<File class="mr-2" slot="icon" />
+				<p slot="name" class="text-sm truncate font-medium text-white">
+					{getFileName(file.fname) || ''}
+				</p>
+			</LibraryCard>
+		{/each}
+		{#if next}
+			<a href={next}>Next Page</a>
+		{/if}
+	</div>
 </div>
+
+<style>
+	.viewport {
+		overflow-y: auto;
+	}
+
+	.results {
+		--columns: 2;
+		display: grid;
+		gap: 1rem;
+		grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+	}
+
+	@media (min-width: 30rem) {
+		.results {
+			--columns: 3;
+		}
+	}
+
+	@media (min-width: 40rem) {
+		.results {
+			--columns: 3;
+		}
+	}
+
+	@media (min-width: 50rem) {
+		.results {
+			--columns: 3;
+		}
+	}
+
+	@media (min-width: 60rem) {
+		.results {
+			--columns: 4;
+		}
+	}
+</style>

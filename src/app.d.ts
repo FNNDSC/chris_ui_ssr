@@ -10,6 +10,8 @@ declare global {
 		interface Locals {
 			user: {
 				name: string;
+				token: string;
+				cubeurl?: string;
 			};
 		}
 	}
