@@ -1,14 +1,14 @@
 import { redirect, error } from '@sveltejs/kit';
 import { fetchClient } from '$lib/client';
-import type { FileType } from '$lib/types/Data/index.js';
+import { getLibraryResources } from '$lib/api/library.js';
 
-export const load = async ({ locals, cookies, params, depends }) => {
+export const load = async ({ locals, params, depends }) => {
 	depends('app:reload');
 	if (!locals.user) {
 		throw redirect(302, '/login');
 	}
 
-	const session = cookies.get('session');
+	const session = locals.user.token;
 
 	if (!session) {
 		throw error(404, {
@@ -24,35 +24,8 @@ export const load = async ({ locals, cookies, params, depends }) => {
 		});
 	}
 
-	const client = fetchClient(session);
+	const client = fetchClient(session, locals.user.cubeurl);
 	await client.setUrls();
-
-	const uploads = await client.getFileBrowserPaths({
-		path: params.slug
-	});
-
-	const pathList = await client.getFileBrowserPath(params.slug);
-
-	const fileList = await pathList.getFiles({
-		limit: 1000000,
-		offset: 0
-	});
-
-	const parsedUpload =
-		uploads.data && uploads.data[0].subfolders ? JSON.parse(uploads.data[0].subfolders) : [];
-
-	const folders = parsedUpload.map((folder: string) => {
-		return {
-			name: folder,
-			path: params.slug
-		};
-	});
-
-	const files: FileType[] = fileList.data ? fileList.data : [];
-
-	return {
-		folders,
-		files,
-		token: session
-	};
+	const data = await getLibraryResources(client, params.slug, 0);
+	return data;
 };

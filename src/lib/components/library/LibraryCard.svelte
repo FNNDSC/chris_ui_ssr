@@ -3,6 +3,7 @@
 	import { Ellipse } from '$lib/components/library';
 	import { Card } from '$lib/components/ui/card';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { Download } from 'lucide-svelte';
 
 	export let data: {
 		active: boolean;
@@ -16,7 +17,7 @@
 
 	let clickCount = 0;
 	let singleClickTimer: any;
-	let actions = ['Download', 'Delete', 'Preview', 'Zip', 'OHIF'];
+	let actions = ['Delete', 'Preview', 'Zip', 'OHIF', 'Export'];
 
 	$: ({ active, path, type, multipleSelected } = data);
 	$: selected = multipleSelected.find((selected) => selected.path === path);
@@ -88,7 +89,13 @@
 								handleAction(action);
 							}}
 						>
-							{action}
+							{#if action === 'Zip' && type === 'file'}
+								Download
+							{:else if action === 'Zip' && type === 'folder'}
+								Zip and Download
+							{:else}
+								{action}
+							{/if}
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />
 					{/each}

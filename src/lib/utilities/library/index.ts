@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type Client from '@fnndsc/chrisapi';
 import { invalidate } from '$app/navigation';
 import { downloadStore, type DownloadState } from '$lib/stores/downloadStore';
 import { uploadStore, type UploadState } from '$lib/stores/uploadStore';
@@ -19,11 +20,84 @@ export function download(blob: Blob, name: string) {
 	document.body.removeChild(link);
 }
 
-async function clientSetup(token: string) {
-	const client = fetchClient(token);
+async function clientSetup(token: string, cubeurl?: string) {
+	const client = fetchClient(token, cubeurl);
 	await client.setUrls();
-
 	return client;
+}
+
+export async function handleUpload(
+	files: FileList,
+	isFolder: boolean,
+	currentPath: string,
+	token: string,
+	cubeurl?: string
+) {
+	const items = Array.from(files);
+	const client = await clientSetup(token, cubeurl);
+	const url = client.uploadedFilesUrl;
+
+	uploadStore.setNewNotification();
+
+	let count = 0;
+	const filePromises = Promise.allSettled(
+		items.map(async (file) => {
+			const formData = new FormData();
+			const name = isFolder ? file.webkitRelativePath : file.name;
+			formData.append('upload_path', `${currentPath}/${name}`);
+			formData.append('fname', file, file.name);
+			const controller = new AbortController();
+
+			try {
+				const config = {
+					headers: { Authorization: 'Token ' + token },
+					signal: controller.signal,
+					onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+						if (progressEvent && progressEvent.progress) {
+							const progress = Math.round(progressEvent.progress * 100);
+
+							if (!isFolder) {
+								uploadStore.setStatusForFiles('Uploading', file.name, progress, controller);
+
+								if (progress === 100) {
+									uploadStore.setStatusForFiles('Upload Complete', file.name, progress, controller);
+								}
+							} else {
+								if (progress === 100) {
+									count++;
+									const fileName = files[0].webkitRelativePath.split('/')[0];
+									uploadStore.setStatusForFolders(
+										'Uploading',
+										fileName,
+										count,
+										files.length,
+										controller
+									);
+
+									if (count === files.length) {
+										uploadStore.setStatusForFolders(
+											'Upload Complete',
+											fileName,
+											count,
+											files.length,
+											controller
+										);
+									}
+								}
+							}
+						}
+					}
+				};
+				await axios.post(url, formData, config);
+			} catch (error: any) {
+				uploadStore.setStatusForFiles('Upload Failed', file.name, 0, controller);
+			}
+		})
+	);
+
+	if ((await filePromises).length === items.length) {
+		invalidate('app:reload');
+	}
 }
 
 export function getFileName(fname: string) {
@@ -38,105 +112,142 @@ export function getFolderForJSON(fname: string) {
 	return fileName;
 }
 
-export async function fetchFile(fname: string, token: string, type: string) {
-	const client = await clientSetup(token);
-	const fetchedFileList = await client.getUploadedFiles({
-		limit: 10000000,
-		fname
+export async function handleFileDelete(file: FileType, token: string, cubeurl?: string) {
+	const client = fetchClient(token, cubeurl);
+	const fileToDelete = await client.getUploadedFiles({
+		fname_exact: file.fname
 	});
 
-	const fetchedFile = fetchedFileList.getItems() as any;
-	return type === 'file' ? fetchedFile[0] : fetchedFile;
-}
+	const fileItems = fileToDelete.getItems();
 
-export async function handleFileDelete(file: FileType, token: string) {
-	const fileData = await fetchFile(file.fname, token, 'file');
-	fileData.delete();
-	invalidate('app:reload');
-}
-
-export async function handleFolderDelete(folder: FolderType, token: string) {
-	const name = `${folder.path}/${folder.name}`;
-	const files = await fetchFile(name, token, 'folder');
-	for (const file of files) {
-		file.delete();
+	if (fileItems) {
+		await fileItems[0].delete();
 	}
 	invalidate('app:reload');
 }
 
-export async function handleFileDownload(file: FileType, token: string, path: string | null) {
-	const response = await fetch('/api/downloads', {
-		method: 'POST',
-		body: JSON.stringify({
-			fname: file.fname,
-			token,
-			userDirectory: path
-		})
-	});
+export async function handleFolderDelete(folder: FolderType, token: string, cubeurl?: string) {
+	uploadStore.setNewNotification();
+	const client = fetchClient(token, cubeurl);
+	const pathToDelete = `${folder.path}/${folder.name}`;
+	const filePath: { [key: string]: FileType[] } = {};
+	const controller = new AbortController();
 
-	return response;
-}
+	await recursivelyOrganizeFiles(pathToDelete, filePath, client);
 
-export async function handleFolderDownload(folder: FolderType, token: string, path: string | null) {
-	const response = await fetch('/api/downloads', {
-		method: 'POST',
-		body: JSON.stringify({
-			fname: `${folder.path}/${folder.name}`,
-			token,
-			userDirectory: path
-		})
-	});
+	for (const path in filePath) {
+		const files = filePath[path];
 
-	return response;
-}
-
-export async function handleZipDownloadFile(file: FileType, token: string) {
-	const fileData = await fetchFile(file.fname, token, 'file');
-	const fileSize = fileData.data.fsize;
-	const fileName = getFileName(fileData.data.fname);
-
-	if (fileSize > 250000) {
-		downloadStore.setNewNotification();
-		const url = `${fileData.url}${fileName}`;
-		const controller = new AbortController();
-
-		downloadStore.setLargeFileDownload(fileName, 0, 'Preparing to Download', controller);
-
-		try {
-			const response = await axios.get(url, {
-				responseType: 'blob',
-				headers: {
-					Authorization: `Token ${token}`
-				},
-				signal: controller.signal,
-				onDownloadProgress: (progressEvent) => {
-					const progress = Math.floor((progressEvent.loaded / fileSize) * 100);
-					downloadStore.setLargeFileDownload(fileName, progress, 'Downloading', controller);
-
-					if (progress === 100) {
-						downloadStore.setLargeFileDownload(fileName, progress, 'Download Complete', controller);
-					}
-				}
+		for (let i = 0; i < files.length; i++) {
+			uploadStore.setStatusForFolders('Deleting', path, i, files.length, controller);
+			const file = files[i];
+			const fileToDelete = await client.getUploadedFiles({
+				fname_exact: file.fname
 			});
 
-			if (response && response.data) {
-				const blob = new Blob([response.data]);
-				download(blob, fileName);
+			const fileItems = fileToDelete.getItems();
+
+			if (fileItems) {
+				await fileItems[0].delete();
 			}
-		} catch (error) {
-			downloadStore.setLargeFileDownload(fileName, 0, 'Download Cancelled', controller);
 		}
-	} else {
-		const blob = await fileData.getFileBlob();
-		download(blob, fileName);
+		uploadStore.setStatusForFolders(
+			'Delete Complete',
+			path,
+			files.length,
+			files.length,
+			controller
+		);
+	}
+
+	invalidate('app:reload');
+}
+
+export async function handleFileExport(file: FileType) {
+	const response = await fetch('/api/downloads', {
+		method: 'POST',
+		body: JSON.stringify({
+			fname: file.fname
+		})
+	});
+
+	return response;
+}
+
+export async function handleFolderExport(folder: FolderType) {
+	const response = await fetch('/api/downloads', {
+		method: 'POST',
+		body: JSON.stringify({
+			fname: `${folder.path}/${folder.name}`
+		})
+	});
+
+	return response;
+}
+
+export async function handleZipDownloadFile(file: FileType, token: string, cubeurl?: string) {
+	const client = fetchClient(token, cubeurl);
+	const fileList = await client.getUploadedFiles({
+		fname: file.fname
+	});
+	const fileItems = fileList.getItems();
+
+	if (fileItems) {
+		const fileData = fileItems[0];
+
+		const fileSize = fileData.data.fsize;
+		const fileName = getFileName(fileData.data.fname);
+
+		if (fileSize > 250000) {
+			downloadStore.setNewNotification();
+			const url = `${fileData.url}${fileName}`;
+			const controller = new AbortController();
+
+			downloadStore.setLargeFileDownload(fileName, 0, 'Preparing to Download', controller);
+
+			try {
+				const response = await axios.get(url, {
+					responseType: 'blob',
+					headers: {
+						Authorization: `Token ${token}`
+					},
+					signal: controller.signal,
+					onDownloadProgress: (progressEvent) => {
+						const progress = Math.floor((progressEvent.loaded / fileSize) * 100);
+						downloadStore.setLargeFileDownload(fileName, progress, 'Downloading', controller);
+
+						if (progress === 100) {
+							downloadStore.setLargeFileDownload(
+								fileName,
+								progress,
+								'Download Complete',
+								controller
+							);
+						}
+					}
+				});
+
+				if (response && response.data) {
+					const blob = new Blob([response.data]);
+					download(blob, fileName);
+				}
+			} catch (error) {
+				downloadStore.setLargeFileDownload(fileName, 0, 'Download Cancelled', controller);
+			}
+		} else {
+			const blob = await fileData.getFileBlob();
+			download(blob, fileName);
+		}
 	}
 }
 
-export async function handleZipFolderDownload(folder: FolderType, token: string) {
-	downloadStore.setNewNotification();
-	downloadStore.setFolderStep(folder.name, 'Preparing to zip');
+export async function handleZipFolderDownload(folder: FolderType, token: string, cubeurl?: string) {
+	const path = `${folder.path}/${folder.name}`;
 
-	const client = await clientSetup(token);
+	downloadStore.setNewNotification();
+	downloadStore.setFolderStep(folder.name, 'Preparing to Zip');
+
+	const client = await clientSetup(token, cubeurl);
 	const dircopyPlugin = await client.getPlugins({
 		name: 'pl-dircopy'
 	});
@@ -144,14 +255,14 @@ export async function handleZipFolderDownload(folder: FolderType, token: string)
 	const dircopyList = dircopyPlugin.getItems() as any;
 
 	if (!dircopyList || dircopyList.length === 0) {
-		downloadStore.setFolderStep(folder.name, 'Download Failed');
+		downloadStore.setFolderStep(folder.name, 'Download Failed - Register Dircopy');
 		return;
 	}
 
 	const dircopy = dircopyList[0];
 
 	const dircopyParams = {
-		dir: folder.path,
+		dir: path,
 		previous_id: 0,
 		title: `${folder.name}.zip`
 	};
@@ -269,82 +380,14 @@ export async function handleZipFolderDownload(folder: FolderType, token: string)
 	}
 }
 
-export async function handleUpload(
-	files: FileList,
-	isFolder: boolean,
+export async function createNewFolder(
+	newFolder: string,
 	currentPath: string,
-	token: string
+	token: string,
+	cubeurl?: string
 ) {
-	const items = Array.from(files);
-	const client = await clientSetup(token);
-	const url = client.uploadedFilesUrl;
-
-	uploadStore.setNewNotification();
-
-	let count = 0;
-	const filePromises = Promise.allSettled(
-		items.map(async (file) => {
-			const formData = new FormData();
-			const name = isFolder ? file.webkitRelativePath : file.name;
-			formData.append('upload_path', `${currentPath}/${name}`);
-			formData.append('fname', file, file.name);
-			const controller = new AbortController();
-
-			try {
-				const config = {
-					headers: { Authorization: 'Token ' + token },
-					signal: controller.signal,
-					onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-						if (progressEvent && progressEvent.progress) {
-							const progress = Math.round(progressEvent.progress * 100);
-
-							if (!isFolder) {
-								uploadStore.setStatusForFiles('Uploading', file.name, progress, controller);
-
-								if (progress === 100) {
-									uploadStore.setStatusForFiles('Upload Complete', file.name, progress, controller);
-								}
-							} else {
-								if (progress === 100) {
-									count++;
-									const fileName = files[0].webkitRelativePath.split('/')[0];
-									uploadStore.setStatusForFolders(
-										'Uploading',
-										fileName,
-										count,
-										files.length,
-										controller
-									);
-
-									if (count === files.length) {
-										uploadStore.setStatusForFolders(
-											'Upload Complete',
-											fileName,
-											count,
-											files.length,
-											controller
-										);
-									}
-								}
-							}
-						}
-					}
-				};
-				await axios.post(url, formData, config);
-			} catch (error: any) {
-				uploadStore.setStatusForFiles('Upload Failed', file.name, 0, controller);
-			}
-		})
-	);
-
-	if ((await filePromises).length === items.length) {
-		invalidate('app:reload');
-	}
-}
-
-export async function createNewFolder(newFolder: string, currentPath: string, token: string) {
 	try {
-		const client = await clientSetup(token);
+		const client = await clientSetup(token, cubeurl);
 
 		if (!newFolder) {
 			newFolder = 'Untitled';
@@ -405,8 +448,12 @@ export function shouldDeleteDownload(currentStep: string) {
 }
 
 export function shouldDeleteUpload(currentStep: string) {
-	const actions = ['Upload Complete', 'Upload Cancelled', 'Upload Failed'];
-	if (actions.includes(currentStep)) {
+	console.log('CurrentStep', currentStep);
+	if (
+		currentStep.includes('Cancelled') ||
+		currentStep.includes('Failed') ||
+		currentStep.includes('Complete')
+	) {
 		return true;
 	}
 
@@ -449,7 +496,6 @@ export function getFileExtension(filename: string) {
 export async function handleOhif(
 	path: string,
 	folderForJSON: string,
-	token: string,
 	type: string,
 	file?: FileType
 ) {
@@ -457,7 +503,6 @@ export async function handleOhif(
 		method: 'POST',
 		body: JSON.stringify({
 			path,
-			token,
 			folderForJSON,
 			type,
 			file
@@ -465,4 +510,40 @@ export async function handleOhif(
 	});
 
 	return response;
+}
+
+async function getFileForPath(path: string, client: Client) {
+	const pathList = await client.getFileBrowserPath(path);
+	const files = await pathList.getFiles({ limit: 100000 });
+	return files;
+}
+
+export async function recursivelyOrganizeFiles(path: string, recursivePath: any, client: Client) {
+	console.log('Path', path);
+	const uploads = await client.getFileBrowserPaths({
+		path
+	});
+
+	if (uploads.data && uploads.data[0].subfolders) {
+		const subfolders = JSON.parse(uploads.data[0].subfolders);
+
+		if (subfolders && subfolders.length > 0) {
+			for (let i = 0; i < subfolders.length; i++) {
+				const folder = subfolders[i];
+				const computedPath = `${path}/${folder}`;
+				const files = await getFileForPath(path, client);
+
+				if (files && files.data) {
+					recursivePath[computedPath] = files.data;
+				}
+				await recursivelyOrganizeFiles(computedPath, recursivePath, client);
+			}
+		} else {
+			const files = await getFileForPath(path, client);
+			if (files && files.data) {
+				recursivePath[path] = files.data;
+			}
+			return;
+		}
+	} else return;
 }

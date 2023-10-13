@@ -1,59 +1,65 @@
 import { fetchClient } from '$lib/client.js';
-import { getFileName } from '$lib/utilities/library/index.js';
+import { getFileName, recursivelyOrganizeFiles } from '$lib/utilities/library/index.js';
 import fs from 'fs';
 import path from 'path';
 import { env } from '$env/dynamic/public';
-
-interface UploadedFile {
-	id: number;
-	fname: string;
-	fsize: number;
-}
+import type { FileType } from '$lib/types/Data';
 
 export const GET = () => {
 	return new Response(JSON.stringify({ success: 'True' }));
 };
 
-export const POST = async ({ request, fetch }) => {
+export const POST = async ({ request, fetch, locals }) => {
 	const data = await request.json();
+	const { token, cubeurl } = locals.user;
 
-	const { fname, token, userDirectory } = data;
+	const { fname } = data;
 
-	const client = fetchClient(token);
-	const fileList = await client.getUploadedFiles({
-		fname,
-		limit: 100000
-	});
+	const client = fetchClient(token, cubeurl);
 
-	const files: UploadedFile[] = fileList.data;
-	const preserveFilePath = `${userDirectory}/${fname}`;
+	const recursivePath: { [key: string]: FileType[] } = {};
+	await recursivelyOrganizeFiles(fname, recursivePath, client);
+	const userDirectory = env.PUBLIC_EXPORT_PATH;
 
-	if (!fs.existsSync(preserveFilePath)) {
-		fs.mkdirSync(preserveFilePath, { recursive: true });
-	}
+	for (const filePath in recursivePath) {
+		const files = recursivePath[filePath];
+		for (let i = 0; i < files.length; i++) {
+			const file: FileType = files[i];
 
-	for (let i = 0; i < files.length; i++) {
-		const file = files[i];
-		const fileName = getFileName(file.fname);
-		const urlPath = `${env.PUBLIC_API_URL}uploadedfiles/${file.id}/${fileName}`;
+			try {
+				const fileList = await client.getUploadedFiles({
+					fname: file.fname
+				});
 
-		const response = await fetch(urlPath, {
-			method: 'GET',
-			headers: {
-				Authorization: `Token ${token}`,
-				'Content-Type': 'blob'
+				const { id, fname } = fileList.data[0];
+				const fileName = getFileName(fname);
+				const urlToFetch = `${env.PUBLIC_API_URL}uploadedfiles/${id}/${fileName}`;
+
+				const responseBlob = await fetch(urlToFetch, {
+					method: 'GET',
+					headers: {
+						Authorization: `Token ${token}`,
+						'Content-Type': 'blob'
+					}
+				});
+				const blob = await responseBlob.blob();
+				const buffer = Buffer.from(await blob.arrayBuffer());
+				const preserveFilePath = `${userDirectory}/${filePath}`;
+				const joinedPath = path.join(preserveFilePath, fileName);
+
+				if (!fs.existsSync(preserveFilePath)) {
+					fs.mkdirSync(preserveFilePath, { recursive: true });
+				}
+
+				fs.writeFile(joinedPath, buffer, (error) => {
+					if (error) {
+						console.error('Error writing File:', error);
+					}
+				});
+			} catch (error) {
+				console.log('Error', error);
 			}
-		});
-		const blob = await response.blob();
-
-		const buffer = Buffer.from(await blob.arrayBuffer());
-		const filePath = path.join(preserveFilePath, fileName);
-
-		fs.writeFile(filePath, buffer, (error) => {
-			if (error) {
-				console.error('Error writing File:', error);
-			}
-		});
+		}
 	}
 
 	return new Response(

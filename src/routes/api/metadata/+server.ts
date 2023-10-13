@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
 import module from 'dicom-parser';
-import type Client from '@fnndsc/chrisapi';
+
 import { fetchClient } from '$lib/client.js';
-import { getFileName } from '$lib/utilities/library/index.js';
-import type { FileType } from '$lib/types/Data/index.js';
+import { getFileName, recursivelyOrganizeFiles } from '$lib/utilities/library';
+import type { FileType } from '$lib/types/Data';
 import { env } from '$env/dynamic/public';
 
 async function setupReader(blob: Blob) {
@@ -12,43 +12,6 @@ async function setupReader(blob: Blob) {
 	const dataSet = module.parseDicom(bufferArray);
 	const dictionary = createDataSet(dataSet);
 	return dictionary;
-}
-
-async function getFileForPath(path: string, client: Client) {
-	const pathList = await client.getFileBrowserPath(path);
-	const files = await pathList.getFiles({ limit: 100000 });
-	return files;
-}
-
-async function recursivelyOrganizeFiles(path: string, token: string, recursivePath: any) {
-	const client = fetchClient(token);
-
-	const uploads = await client.getFileBrowserPaths({
-		path
-	});
-
-	if (uploads.data && uploads.data[0].subfolders) {
-		const subfolders = JSON.parse(uploads.data[0].subfolders);
-
-		if (subfolders && subfolders.length > 0) {
-			for (let i = 0; i < subfolders.length; i++) {
-				const folder = subfolders[i];
-				const computedPath = `${path}/${folder}`;
-				const files = await getFileForPath(path, client);
-
-				if (files && files.data) {
-					recursivePath[computedPath] = files.data;
-				}
-				await recursivelyOrganizeFiles(computedPath, token, recursivePath);
-			}
-		} else {
-			const files = await getFileForPath(path, client);
-			if (files && files.data) {
-				recursivePath[path] = files.data;
-			}
-			return;
-		}
-	} else return;
 }
 
 type DicomValue = Record<string, string | number | number[] | string[] | undefined>;
@@ -82,15 +45,16 @@ type SeriesAccumulator = {
 
 type Studies = Study[];
 
-export const POST = async ({ request, fetch, url }) => {
+export const POST = async ({ request, fetch, url, locals }) => {
 	const data = await request.json();
-
-	const { path, token, folderForJSON, type, file } = data;
+	const { token, cubeurl } = locals.user;
+	const { path, folderForJSON, type, file } = data;
 
 	const recursivePath: { [key: string]: FileType[] } = {};
+	const client = fetchClient(token, cubeurl);
 
 	if (type === 'folder') {
-		await recursivelyOrganizeFiles(path, token, recursivePath);
+		await recursivelyOrganizeFiles(path, recursivePath, client);
 	} else if (type === 'file') {
 		recursivePath[path] = [file];
 	}
@@ -107,8 +71,6 @@ export const POST = async ({ request, fetch, url }) => {
 
 		for (let i = 0; i < files.length; i++) {
 			const file: FileType = files[i];
-
-			const client = fetchClient(token);
 
 			try {
 				const fileList = await client.getUploadedFiles({

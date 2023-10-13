@@ -15,11 +15,13 @@ export const getClientByEnvironment = (): typeof Client => {
 	return Client.default;
 };
 
-export const fetchClient = (token: string) => {
+export const fetchClient = (token: string, url?: string) => {
 	//@ts-ignore
-	const clientClass = getClientByEnvironment();
 
-	const client: Client = new clientClass(env.PUBLIC_API_URL, {
+	const clientClass = getClientByEnvironment();
+	const apiURL = url ? url : env.PUBLIC_API_URL;
+
+	const client: Client = new clientClass(apiURL, {
 		token
 	});
 

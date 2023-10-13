@@ -9,8 +9,9 @@
 	import { downloadStore } from '$lib/stores/downloadStore';
 	import { getActiveStatus } from '$lib/utilities/library';
 	import NavItemDesktop from '$components/common/NavItemDesktop.svelte';
+	import type { PageData } from './$types';
 
-	export let data;
+	export let data: PageData;
 
 	$: user = data.user.name;
 
@@ -348,7 +349,7 @@
 			</div>
 		</div>
 
-		<main class="h-full w-full">
+		<main class="infinite">
 			{#if $navigating}
 				<Loading />
 			{:else}
@@ -361,3 +362,10 @@
 		</main>
 	</div>
 </div>
+
+<style>
+	main.infinite {
+		height: 0;
+		flex: 1;
+	}
+</style>
