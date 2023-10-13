@@ -112,7 +112,7 @@
 			}
 
 			case 'Zip': {
-				handleZipDownloadFile(file, data.user.token);
+				handleZipDownloadFile(file, data.user.token, data.user.cubeurl);
 				break;
 			}
 
